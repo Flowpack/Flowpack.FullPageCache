@@ -1,0 +1,14 @@
+Neos:
+  Flow:
+    http:
+      chain:
+        'process':
+          chain:
+            requestInterceptor:
+              position: 'start 999999'
+              component: 'Flowpack\FullPageCache\Http\RequestInterceptorComponent'
+        'postprocess':
+          chain:
+            requestStorage:
+              position: 'after standardsCompliance'
+              component: 'Flowpack\FullPageCache\Http\RequestStorageComponent'

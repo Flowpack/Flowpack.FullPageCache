@@ -1,0 +1,19 @@
+{
+    "description": "Does Page Cache THings",
+    "type": "neos-package",
+    "name": "flowpack/fullpagecache",
+    "license": "MIT",
+    "require": {
+        "neos/neos": "^5.0 || dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "Flowpack\\FullPageCache\\": "Classes/"
+        }
+    },
+    "extra": {
+        "neos": {
+            "package-key": "Flowpack.FullPageCache"
+        }
+    }
+}
