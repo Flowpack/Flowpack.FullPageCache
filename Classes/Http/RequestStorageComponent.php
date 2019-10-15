@@ -1,6 +1,7 @@
 <?php
 namespace Flowpack\FullPageCache\Http;
 
+use Flowpack\FullPageCache\Aspects\ContentCacheAspect;
 use Neos\Cache\Frontend\StringFrontend;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Component\ComponentContext;
@@ -17,6 +18,12 @@ class RequestStorageComponent implements ComponentInterface
      * @var StringFrontend
      */
     protected $cacheFrontend;
+
+    /**
+     * @Flow\Inject
+     * @var ContentCacheAspect
+     */
+    protected $contentCacheAspect;
 
     /**
      * @inheritDoc
@@ -38,10 +45,18 @@ class RequestStorageComponent implements ComponentInterface
             return;
         }
 
+        if ($this->contentCacheAspect->hasUncachedSegments())
+        {
+            die('had uncached!');
+            return;
+        }
+
         $entryIdentifier = md5((string)$request->getUri());
 
+        $lifetime = $this->contentCacheAspect->getShortestLifetime();
+        $tags = $this->contentCacheAspect->getAllCacheTags();
+
         $modifiedResponse = $response->withHeader('X-Storage-Component', $entryIdentifier);
-        $this->cacheFrontend->set($entryIdentifier, str($modifiedResponse));
+        $this->cacheFrontend->set($entryIdentifier, str($modifiedResponse), $tags, $lifetime);
     }
 }
-
