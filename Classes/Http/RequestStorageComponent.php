@@ -58,5 +58,7 @@ class RequestStorageComponent implements ComponentInterface
 
         $modifiedResponse = $response->withHeader('X-Storage-Component', $entryIdentifier);
         $this->cacheFrontend->set($entryIdentifier, str($modifiedResponse), $tags, $lifetime);
+        // TODO: because stream is copied ot the modifiedResponse we would get empty output on first request
+        $response->getBody()->rewind();
     }
 }
