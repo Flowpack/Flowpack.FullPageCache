@@ -1,3 +1,6 @@
+Flowpack:
+  FullPageCache:
+    enabled: true
 Neos:
   Flow:
     http:
