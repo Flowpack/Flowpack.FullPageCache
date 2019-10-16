@@ -57,7 +57,6 @@ class RequestStorageComponent implements ComponentInterface
 
         if ($this->contentCacheAspect->hasUncachedSegments())
         {
-            die('had uncached!');
             return;
         }
 
