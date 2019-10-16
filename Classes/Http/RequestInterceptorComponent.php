@@ -35,7 +35,7 @@ class RequestInterceptorComponent implements ComponentInterface
         }
 
         $request = $componentContext->getHttpRequest();
-        if ($request->getMethod() !== 'GET') {
+        if (strtoupper($request->getMethod()) !== 'GET') {
             return;
         }
 

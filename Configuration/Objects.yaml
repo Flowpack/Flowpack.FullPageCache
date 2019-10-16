@@ -17,3 +17,13 @@ Flowpack\FullPageCache\Http\RequestStorageComponent:
         arguments:
           1:
             value: Flowpack_FullPageCache_Entries
+
+Flowpack\FullPageCache\FullCacheFlusher:
+  properties:
+    cacheFrontend:
+      object:
+        factoryObjectName: Neos\Flow\Cache\CacheManager
+        factoryMethodName: getCache
+        arguments:
+          1:
+            value: Flowpack_FullPageCache_Entries

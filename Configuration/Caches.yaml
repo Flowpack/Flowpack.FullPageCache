@@ -1,4 +1,2 @@
 Flowpack_FullPageCache_Entries:
-  backend: Neos\Cache\Backend\RedisBackend
-  backendOptions:
-    port: 32772
+  backend: Neos\Cache\Backend\FileBackend
