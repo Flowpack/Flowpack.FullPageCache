@@ -6,6 +6,8 @@ use Neos\Cache\Frontend\StringFrontend;
 use Neos\Flow\Http\Component\ComponentChain;
 use Neos\Flow\Http\Component\ComponentContext;
 use Neos\Flow\Http\Component\ComponentInterface;
+use Neos\Flow\Security\SessionDataContainer;
+use Neos\Flow\Session\SessionManagerInterface;
 use function GuzzleHttp\Psr7\parse_response;
 
 /**
@@ -26,6 +28,18 @@ class RequestInterceptorComponent implements ComponentInterface
     protected $enabled;
 
     /**
+     * @Flow\Inject(lazy=false)
+     * @var SessionManagerInterface
+     */
+    protected $sessionManager;
+
+    /**
+     * @Flow\Inject
+     * @var SessionDataContainer
+     */
+    protected $sessionDataContainer;
+
+    /**
      * @inheritDoc
      */
     public function handle(ComponentContext $componentContext)
@@ -40,6 +54,10 @@ class RequestInterceptorComponent implements ComponentInterface
         }
 
         if (!empty($request->getUri()->getQuery())) {
+            return;
+        }
+
+        if ($this->sessionManager->getCurrentSession()->isStarted() && !empty($this->sessionDataContainer->getSecurityTokens())) {
             return;
         }
 

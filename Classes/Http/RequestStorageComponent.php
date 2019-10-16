@@ -60,6 +60,10 @@ class RequestStorageComponent implements ComponentInterface
             return;
         }
 
+        if ($response->hasHeader('Set-Cookie')) {
+            return;
+        }
+
         $entryIdentifier = md5((string)$request->getUri());
 
         $lifetime = $this->contentCacheAspect->getShortestLifetime();
