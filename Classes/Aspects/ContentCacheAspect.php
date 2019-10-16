@@ -1,8 +1,10 @@
 <?php
 namespace Flowpack\FullPageCache\Aspects;
 
+use Neos\Cache\Frontend\StringFrontend;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Aop\JoinPointInterface;
+use Neos\Utility\ObjectAccess;
 
 /**
  * @Flow\Aspect
@@ -20,47 +22,10 @@ class ContentCacheAspect
     private $shortestLifetime = null;
 
     /**
-     * @Flow\Before("method(Neos\Fusion\Core\Cache\ContentCache->createCacheSegment())")
+     * @Flow\Inject
+     * @var StringFrontend
      */
-    public function grabCachedSegment(JoinPointInterface $joinPoint)
-    {
-        $tags = $joinPoint->getMethodArgument('tags');
-        $lifetime = $joinPoint->getMethodArgument('lifetime');
-
-        foreach ($tags as $tag) {
-            $this->cacheTags[$tag] = true;
-        }
-
-        if ($lifetime !== null && $lifetime < $this->shortestLifetime) {
-            $this->shortestLifetime = $lifetime;
-        }
-    }
-
-    /**
-     * @Flow\Before("method(Neos\Fusion\Core\Cache\ContentCache->createDynamicCachedSegment())")
-     */
-    public function grabDynamicCachedSegment(JoinPointInterface $joinPoint)
-    {
-        $tags = $joinPoint->getMethodArgument('tags');
-        $lifetime = $joinPoint->getMethodArgument('lifetime');
-
-        foreach ($tags as $tag) {
-            $this->cacheTags[$tag] = true;
-        }
-
-        if ($lifetime === null) {
-            return;
-        }
-
-        if ($this->shortestLifetime === null) {
-            $this->shortestLifetime = $lifetime;
-            return;
-        }
-
-        if ($lifetime < $this->shortestLifetime) {
-            $this->shortestLifetime = $lifetime;
-        }
-    }
+    protected $cacheFrontend;
 
     /**
      * @Flow\Before("method(Neos\Fusion\Core\Cache\ContentCache->createUncachedSegment())")
@@ -71,19 +36,20 @@ class ContentCacheAspect
     }
 
     /**
-     * @return array
+     * @Flow\Before("method(Neos\Neos\Fusion\Cache\ContentCacheFlusher->shutdownObject())")
+     * @param JoinPointInterface $joinPoint
+     *
+     * @throws \Neos\Utility\Exception\PropertyNotAccessibleException
      */
-    public function getAllCacheTags(): array
+    public function interceptNodeCacheFlush(JoinPointInterface $joinPoint)
     {
-        return $this->sanitizeTags(array_keys($this->cacheTags));
-    }
+        $object = $joinPoint->getProxy();
 
-    /**
-     * @return int|null
-     */
-    public function getShortestLifetime(): ?int
-    {
-        return $this->shortestLifetime;
+        $tags = ObjectAccess::getProperty($object, 'tagsToFlush', true);
+        foreach ($tags as $tag => $_) {
+            $tag = $this->sanitizeTag($tag);
+            $this->cacheFrontend->flushByTag($tag);
+        }
     }
 
     /**
@@ -103,20 +69,5 @@ class ContentCacheAspect
     protected function sanitizeTag($tag)
     {
         return strtr($tag, '.:', '_-');
-    }
-
-    /**
-     * Sanitizes multiple tags with sanitizeTag()
-     *
-     * @param array $tags Multiple tags
-     * @return array The sanitized tags
-     */
-    protected function sanitizeTags(array $tags)
-    {
-        foreach ($tags as $key => $value) {
-            $tags[$key] = $this->sanitizeTag($value);
-        }
-
-        return $tags;
     }
 }

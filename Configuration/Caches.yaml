@@ -1,2 +1,5 @@
 Flowpack_FullPageCache_Entries:
   backend: Neos\Cache\Backend\FileBackend
+
+Neos_Fusion_Content:
+  frontend: Flowpack\FullPageCache\Cache\MetadataAwareStringFrontend
