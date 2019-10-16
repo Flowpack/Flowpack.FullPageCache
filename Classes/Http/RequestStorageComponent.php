@@ -20,6 +20,12 @@ class RequestStorageComponent implements ComponentInterface
     protected $cacheFrontend;
 
     /**
+     * @var boolean
+     * @Flow\InjectConfiguration(path="enabled")
+     */
+    protected $enabled;
+
+    /**
      * @Flow\Inject
      * @var ContentCacheAspect
      */
@@ -30,6 +36,10 @@ class RequestStorageComponent implements ComponentInterface
      */
     public function handle(ComponentContext $componentContext)
     {
+        if (!$this->enabled) {
+            return;
+        }
+
         $request = $componentContext->getHttpRequest();
         if (strtoupper($request->getMethod()) !== 'GET') {
             return;

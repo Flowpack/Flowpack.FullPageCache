@@ -20,10 +20,20 @@ class RequestInterceptorComponent implements ComponentInterface
     protected $cacheFrontend;
 
     /**
+     * @var boolean
+     * @Flow\InjectConfiguration(path="enabled")
+     */
+    protected $enabled;
+
+    /**
      * @inheritDoc
      */
     public function handle(ComponentContext $componentContext)
     {
+        if (!$this->enabled) {
+            return;
+        }
+
         $request = $componentContext->getHttpRequest();
         if (strtoupper($request->getMethod()) !== 'GET') {
             return;
