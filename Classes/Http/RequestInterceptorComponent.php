@@ -65,7 +65,11 @@ class RequestInterceptorComponent implements ComponentInterface
 
         $entry = $this->cacheFrontend->get($entryIdentifier);
         if ($entry) {
-            $response = parse_response($entry);
+            if (class_exists('Neos\\Flow\\Http\\Response')) {
+                $response = \Neos\Flow\Http\Response::createFromRaw($entry);
+            } else {
+                $response = parse_response($entry);
+            }
             $response = $response->withHeader('X-From-FullPageCache', $entryIdentifier);
             $componentContext->replaceHttpResponse($response);
             $componentContext->setParameter(ComponentChain::class, 'cancel', true);
