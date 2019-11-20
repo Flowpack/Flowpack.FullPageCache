@@ -10,6 +10,9 @@ Neos:
             requestInterceptor:
               position: 'start 999999'
               component: 'Flowpack\FullPageCache\Http\RequestInterceptorComponent'
+            addCacheHeader:
+              position: 'after setHeader'
+              component: 'Flowpack\FullPageCache\Http\CacheControlHeaderComponent'
         'postprocess':
           chain:
             requestStorage:

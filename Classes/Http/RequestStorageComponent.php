@@ -1,8 +1,6 @@
 <?php
 namespace Flowpack\FullPageCache\Http;
 
-use Flowpack\FullPageCache\Aspects\ContentCacheAspect;
-use Flowpack\FullPageCache\Cache\MetadataAwareStringFrontend;
 use Neos\Cache\Frontend\StringFrontend;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Component\ComponentContext;
@@ -21,94 +19,56 @@ class RequestStorageComponent implements ComponentInterface
     protected $cacheFrontend;
 
     /**
-     * @Flow\Inject
-     * @var MetadataAwareStringFrontend
-     */
-    protected $contentCache;
-
-    /**
      * @var boolean
      * @Flow\InjectConfiguration(path="enabled")
      */
     protected $enabled;
 
     /**
-     * @Flow\Inject
-     * @var ContentCacheAspect
-     */
-    protected $contentCacheAspect;
-
-    /**
      * @inheritDoc
      */
     public function handle(ComponentContext $componentContext)
     {
-        if (!$this->enabled) {
-            return;
-        }
-
         $request = $componentContext->getHttpRequest();
-        if (strtoupper($request->getMethod()) !== 'GET') {
-            return;
-        }
-
-        if (!empty($request->getUri()->getQuery())) {
-            return;
-        }
-
         $response = $componentContext->getHttpResponse();
 
         if ($response->hasHeader('X-From-FullPageCache')) {
             return;
         }
 
-        if ($this->contentCacheAspect->hasUncachedSegments())
-        {
-            return;
-        }
+        if ($response->hasHeader('CacheControl')) {
+            $cacheControl = $response->getHeaderLine('CacheControl');
+            if ($cacheControl && strpos($cacheControl,'s-maxage=') === 0) {
+                $lifetime =  (int) substr($cacheControl, 10);
+                $cacheTags = $response->getHeader('X-CacheTags') ;
 
-        if ($response->hasHeader('Set-Cookie')) {
-            return;
-        }
+                $entryIdentifier = md5((string)$request->getUri());
+                $etag = md5(str($response));
 
-        $entryIdentifier = md5((string)$request->getUri());
+                $modifiedResponse = $response
+                    ->withoutHeader('X-CacheTags')
+                    ->withoutHeader('CacheControl')
+                    ->withAddedHeader('ETag', $etag)
+                    ->withAddedHeader('CacheControl', 'max-age=' . $lifetime);
 
-        [$tags, $lifetime] = $this->getCacheTagsAndLifetime();
+                $modifiedResponseforStorage = $modifiedResponse
+                    ->withHeader('X-Storage-Component', $entryIdentifier)
+                    ->withHeader('X-Storage-Timestamp', time())
+                    ->withHeader('X-Storage-Lifetime', $lifetime);
 
-        if (empty($tags)) {
-            // For now do not cache something without tags (maybe it was not a Neos page)
-            return;
-        }
+                $this->cacheFrontend->set($entryIdentifier, str($modifiedResponseforStorage), $cacheTags, $lifetime);
+                $response->getBody()->rewind();
 
-        $modifiedResponse = $response->withHeader('X-Storage-Component', $entryIdentifier);
-        $this->cacheFrontend->set($entryIdentifier, str($modifiedResponse), $tags, $lifetime);
-        // TODO: because stream is copied ot the modifiedResponse we would get empty output on first request
-        $response->getBody()->rewind();
-    }
-
-    /**
-     * Get cache tags and lifetime from the cache metadata that was extracted by the special cache frontend for content cache
-     *
-     * @return array with first "tags" and then "lifetime"
-     */
-    protected function getCacheTagsAndLifetime(): array
-    {
-        $lifetime = null;
-        $tags = [];
-        $entriesMetadata = $this->contentCache->getAllMetadata();
-        foreach ($entriesMetadata as $identifier => $metadata) {
-            $entryTags = isset($metadata['tags']) ? $metadata['tags'] : [];
-            $entryLifetime = isset($metadata['lifetime']) ? $metadata['lifetime'] : null;
-            if ($entryLifetime !== null) {
-                if ($lifetime === null) {
-                    $lifetime = $entryLifetime;
+                $ifNoneMatch = $request->getHeaderLine('If-None-Match');
+                if ($ifNoneMatch &&  $ifNoneMatch === $etag ) {
+                    $notModifiedResponse = (new Response(304))
+                        ->withAddedHeader('CacheControl', 'max-age=' . $lifetime)
+                        ->withHeader('X-From-FullPageCache', $entryIdentifier);
+                    $componentContext->replaceHttpResponse($notModifiedResponse);
                 } else {
-                    $lifetime = min($lifetime, $entryLifetime);
+                    $componentContext->replaceHttpResponse($modifiedResponse);
                 }
             }
-            $tags = array_unique(array_merge($tags, $entryTags));
         }
-
-        return [$tags, $lifetime];
     }
 }
