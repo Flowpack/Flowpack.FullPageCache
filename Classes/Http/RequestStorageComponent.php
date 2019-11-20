@@ -61,7 +61,12 @@ class RequestStorageComponent implements ComponentInterface
 
                 $ifNoneMatch = $request->getHeaderLine('If-None-Match');
                 if ($ifNoneMatch &&  $ifNoneMatch === $etag ) {
-                    $notModifiedResponse = (new Response(304))
+                    if (class_exists('Neos\\Flow\\Http\\Response')) {
+                        $notModifiedResponse = new \Neos\Flow\Http\Response();
+                    } else {
+                        $notModifiedResponse = new Response(304);
+                    }
+                    $notModifiedResponse = $notModifiedResponse
                         ->withAddedHeader('CacheControl', 'max-age=' . $lifetime)
                         ->withHeader('X-From-FullPageCache', $entryIdentifier);
                     $componentContext->replaceHttpResponse($notModifiedResponse);

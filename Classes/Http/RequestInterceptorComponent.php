@@ -66,7 +66,11 @@ class RequestInterceptorComponent implements ComponentInterface
 
         $entry = $this->cacheFrontend->get($entryIdentifier);
         if ($entry) {
-            $cachedResponse = parse_response($entry);
+            if (class_exists('Neos\\Flow\\Http\\Response')) {
+                $cachedResponse = \Neos\Flow\Http\Response::createFromRaw($entry);
+            } else {
+                $cachedResponse = parse_response($entry);
+            }
 
             $etag = $cachedResponse->getHeaderLine('ETag');
             $lifetime = (int)$cachedResponse->getHeaderLine('X-Storage-Lifetime');
@@ -79,7 +83,12 @@ class RequestInterceptorComponent implements ComponentInterface
 
             $ifNoneMatch = $request->getHeaderLine('If-None-Match');
             if ($ifNoneMatch &&  $ifNoneMatch === $etag ) {
-                $response = (new Response( 304))
+                if (class_exists('Neos\\Flow\\Http\\Response')) {
+                    $response = new \Neos\Flow\Http\Response();
+                } else {
+                    $response = new Response(304);
+                }
+                $response = $response
                     ->withHeader('CacheControl', 'max-age=' . ($lifetime - $age))
                     ->withHeader('X-From-FullPageCache', $entryIdentifier);
             } else {
