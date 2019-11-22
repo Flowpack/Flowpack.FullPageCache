@@ -68,7 +68,7 @@ class CacheControlHeaderComponent implements ComponentInterface
 
         if ($tags) {
             $modifiedResponse = $response
-                ->withHeader('CacheControl', 's-maxage=' . ($lifetime ?? 86400))
+                ->withHeader('X-CacheLifetime', $lifetime)
                 ->withHeader('X-CacheTags', $tags);
 
             $componentContext->replaceHttpResponse($modifiedResponse);

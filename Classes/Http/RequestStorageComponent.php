@@ -25,6 +25,12 @@ class RequestStorageComponent implements ComponentInterface
     protected $enabled;
 
     /**
+     * @var boolean
+     * @Flow\InjectConfiguration(path="maxPublicCacheTime")
+     */
+    protected $maxPublicCacheTime;
+
+    /**
      * @inheritDoc
      */
     public function handle(ComponentContext $componentContext)
@@ -36,44 +42,39 @@ class RequestStorageComponent implements ComponentInterface
             return;
         }
 
-        if ($response->hasHeader('CacheControl')) {
-            $cacheControl = $response->getHeaderLine('CacheControl');
-            if ($cacheControl && strpos($cacheControl,'s-maxage=') === 0) {
-                $lifetime =  (int) substr($cacheControl, 10);
-                $cacheTags = $response->getHeader('X-CacheTags') ;
+        if ($response->hasHeader('X-CacheLifetime')) {
+            $lifetime = (int)$response->getHeaderLine('X-CacheLifetime');
+            $cacheTags = $response->getHeader('X-CacheTags') ;
+            $entryIdentifier = md5((string)$request->getUri());
 
-                $entryIdentifier = md5((string)$request->getUri());
-                $etag = md5(str($response));
-
-                $modifiedResponse = $response
-                    ->withoutHeader('X-CacheTags')
-                    ->withoutHeader('CacheControl')
-                    ->withAddedHeader('ETag', $etag)
-                    ->withAddedHeader('CacheControl', 'max-age=' . $lifetime);
-
-                $modifiedResponseforStorage = $modifiedResponse
-                    ->withHeader('X-Storage-Component', $entryIdentifier)
-                    ->withHeader('X-Storage-Timestamp', time())
-                    ->withHeader('X-Storage-Lifetime', $lifetime);
-
-                $this->cacheFrontend->set($entryIdentifier, str($modifiedResponseforStorage), $cacheTags, $lifetime);
-                $response->getBody()->rewind();
-
-                $ifNoneMatch = $request->getHeaderLine('If-None-Match');
-                if ($ifNoneMatch &&  $ifNoneMatch === $etag ) {
-                    if (class_exists('Neos\\Flow\\Http\\Response')) {
-                        $notModifiedResponse = new \Neos\Flow\Http\Response();
-                    } else {
-                        $notModifiedResponse = new Response(304);
-                    }
-                    $notModifiedResponse = $notModifiedResponse
-                        ->withAddedHeader('CacheControl', 'max-age=' . $lifetime)
-                        ->withHeader('X-From-FullPageCache', $entryIdentifier);
-                    $componentContext->replaceHttpResponse($notModifiedResponse);
+            $publicLifetime = 0;
+            if ($this->maxPublicCacheTime > 0) {
+                if ($lifetime > 0 && $lifetime < $this->maxPublicCacheTime) {
+                    $publicLifetime = $lifetime;
                 } else {
-                    $componentContext->replaceHttpResponse($modifiedResponse);
+                    $publicLifetime = $this->maxPublicCacheTime;
                 }
             }
+
+            $modifiedResponse = $response
+                ->withoutHeader('X-CacheTags')
+                ->withoutHeader('X-CacheLifetime');
+
+            if ($publicLifetime > 0) {
+                $entryContentHash = md5(str($response));
+                $modifiedResponse = $modifiedResponse
+                    ->withAddedHeader('ETag', $entryContentHash)
+                    ->withAddedHeader('CacheControl', 'max-age=' . $publicLifetime);
+            }
+
+            $modifiedResponseforStorage = $modifiedResponse
+                ->withHeader('X-Storage-Timestamp', time())
+                ->withHeader('X-Storage-Lifetime', $lifetime);
+
+            $this->cacheFrontend->set($entryIdentifier, str($modifiedResponseforStorage), $cacheTags, $lifetime);
+
+            $modifiedResponse->getBody()->rewind();
+            $componentContext->replaceHttpResponse($modifiedResponse);
         }
     }
 }
