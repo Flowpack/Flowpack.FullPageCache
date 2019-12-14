@@ -1,3 +1,13 @@
+Flowpack\FullPageCache\Http\CacheControlHeaderComponent:
+  properties:
+    contentCache:
+      object:
+        factoryObjectName: Neos\Flow\Cache\CacheManager
+        factoryMethodName: getCache
+        arguments:
+          1:
+            value: Neos_Fusion_Content
+
 Flowpack\FullPageCache\Http\RequestInterceptorComponent:
   properties:
     cacheFrontend:
@@ -17,13 +27,6 @@ Flowpack\FullPageCache\Http\RequestStorageComponent:
         arguments:
           1:
             value: Flowpack_FullPageCache_Entries
-    contentCache:
-      object:
-        factoryObjectName: Neos\Flow\Cache\CacheManager
-        factoryMethodName: getCache
-        arguments:
-          1:
-            value: Neos_Fusion_Content
 
 Flowpack\FullPageCache\Aspects\ContentCacheAspect:
   properties:

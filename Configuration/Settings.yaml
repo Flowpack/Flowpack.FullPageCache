@@ -1,6 +1,11 @@
 Flowpack:
   FullPageCache:
+    # enable full page caching
     enabled: true
+
+    # the maximum public cache control header sent
+    # set to 0 if you do not want to send public CacheControl headers
+    maxPublicCacheTime: 86400
 Neos:
   Flow:
     http:
@@ -10,6 +15,9 @@ Neos:
             requestInterceptor:
               position: 'start 999999'
               component: 'Flowpack\FullPageCache\Http\RequestInterceptorComponent'
+            addCacheHeader:
+              position: 'after setHeader'
+              component: 'Flowpack\FullPageCache\Http\CacheControlHeaderComponent'
         'postprocess':
           chain:
             requestStorage:
