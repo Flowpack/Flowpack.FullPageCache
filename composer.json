@@ -1,5 +1,5 @@
 {
-    "description": "Does Page Cache THings",
+    "description": "Cache full Neos page responses",
     "type": "neos-package",
     "name": "flowpack/fullpagecache",
     "license": "MIT",
