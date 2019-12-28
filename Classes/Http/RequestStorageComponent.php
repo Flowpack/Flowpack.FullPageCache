@@ -51,6 +51,10 @@ class RequestStorageComponent implements ComponentInterface
             $cacheTags = $response->getHeader('X-CacheTags') ;
             $entryIdentifier = md5((string)$request->getUri());
 
+            if (!is_array($cacheTags)) {
+                $cacheTags = [$cacheTags];
+            }
+
             $publicLifetime = 0;
             if ($this->maxPublicCacheTime > 0) {
                 if ($lifetime > 0 && $lifetime < $this->maxPublicCacheTime) {
