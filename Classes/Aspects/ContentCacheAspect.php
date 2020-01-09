@@ -28,7 +28,7 @@ class ContentCacheAspect
     protected $cacheFrontend;
 
     /**
-     * @Flow\Before("method(Neos\Fusion\Core\Cache\ContentCache->createUncachedSegment())")
+     * @Flow\Before("method(Neos\Fusion\Core\Cache\ContentCache->(createUncachedSegment|replaceUncachedPlaceholders)())")
      */
     public function grabUncachedSegment(JoinPointInterface $joinPoint)
     {
