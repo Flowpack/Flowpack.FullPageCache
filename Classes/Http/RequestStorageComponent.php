@@ -41,8 +41,14 @@ class RequestStorageComponent implements ComponentInterface
         if ($response->hasHeader('X-From-FullPageCache')) {
             return;
         }
-        
+
         if ($response->hasHeader('Set-Cookie')) {
+            if ($response->hasHeader('X-CacheLifetime')) {
+                $responseWithoutStorageHeaders = $response
+                    ->withoutHeader('X-CacheTags')
+                    ->withoutHeader('X-CacheLifetime');
+                $componentContext->replaceHttpResponse($responseWithoutStorageHeaders);
+            }
             return;
         }
 
