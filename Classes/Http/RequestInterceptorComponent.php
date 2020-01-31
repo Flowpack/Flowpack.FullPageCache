@@ -84,7 +84,7 @@ class RequestInterceptorComponent implements ComponentInterface
 
             // return 304 not modified when possible
             $ifNoneMatch = $request->getHeaderLine('If-None-Match');
-            if ($ifNoneMatch && $ifNoneMatch === $etag ) {
+            if ($ifNoneMatch && ($ifNoneMatch === $etag || $ifNoneMatch === 'W/' . $etag)) {
                 if (class_exists('Neos\\Flow\\Http\\Response')) {
                     $notModifiedResponse = new \Neos\Flow\Http\Response();
                 } else {

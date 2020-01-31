@@ -77,7 +77,7 @@ class RequestStorageComponent implements ComponentInterface
             if ($publicLifetime > 0) {
                 $entryContentHash = md5(str($response));
                 $modifiedResponse = $modifiedResponse
-                    ->withAddedHeader('ETag', $entryContentHash)
+                    ->withAddedHeader('ETag', '"' . $entryContentHash . '"')
                     ->withAddedHeader('CacheControl', 'max-age=' . $publicLifetime);
             }
 
