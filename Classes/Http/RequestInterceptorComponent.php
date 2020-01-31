@@ -8,7 +8,6 @@ use Neos\Flow\Http\Component\ComponentContext;
 use Neos\Flow\Http\Component\ComponentInterface;
 use Neos\Flow\Security\SessionDataContainer;
 use Neos\Flow\Session\SessionManagerInterface;
-use GuzzleHttp\Psr7\Response;
 use function GuzzleHttp\Psr7\parse_response;
 
 /**
@@ -82,23 +81,6 @@ class RequestInterceptorComponent implements ComponentInterface
             $lifetime = (int)$cachedResponse->getHeaderLine('X-Storage-Lifetime');
             $timestamp = (int)$cachedResponse->getHeaderLine('X-Storage-Timestamp');
 
-            // return 304 not modified when possible
-            $ifNoneMatch = $request->getHeaderLine('If-None-Match');
-            if ($ifNoneMatch && ($ifNoneMatch === $etag || $ifNoneMatch === 'W/' . $etag)) {
-                if (class_exists('Neos\\Flow\\Http\\Response')) {
-                    $notModifiedResponse = new \Neos\Flow\Http\Response();
-                } else {
-                    $notModifiedResponse = new Response();
-                }
-                $notModifiedResponse = $notModifiedResponse
-                    ->withStatus(304)
-                    ->withHeader('X-From-FullPageCache', $entryIdentifier);
-
-                $componentContext->replaceHttpResponse($notModifiedResponse);
-                $componentContext->setParameter(ComponentChain::class, 'cancel', true);
-                return;
-            }
-
             $cachedResponse = $cachedResponse
                 ->withoutHeader('X-Storage-Lifetime')
                 ->withoutHeader('X-Storage-Timestamp')
@@ -118,6 +100,12 @@ class RequestInterceptorComponent implements ComponentInterface
                     $cachedResponse = $cachedResponse
                         ->withHeader('CacheControl', 'max-age=' . $this->maxPublicCacheTime);
                 }
+            }
+
+            $ifNoneMatch = $request->getHeaderLine('If-None-Match');
+            if ($ifNoneMatch && ($ifNoneMatch === $etag || $ifNoneMatch === 'W/' . $etag)) {
+                $cachedResponse = $cachedResponse
+                    ->withStatus(304);
             }
 
             $componentContext->replaceHttpResponse($cachedResponse);
