@@ -77,7 +77,6 @@ class RequestInterceptorComponent implements ComponentInterface
                 $cachedResponse = parse_response($entry);
             }
 
-            $etag = $cachedResponse->getHeaderLine('ETag');
             $lifetime = (int)$cachedResponse->getHeaderLine('X-Storage-Lifetime');
             $timestamp = (int)$cachedResponse->getHeaderLine('X-Storage-Timestamp');
 
@@ -100,12 +99,6 @@ class RequestInterceptorComponent implements ComponentInterface
                     $cachedResponse = $cachedResponse
                         ->withHeader('CacheControl', 'max-age=' . $this->maxPublicCacheTime);
                 }
-            }
-
-            $ifNoneMatch = $request->getHeaderLine('If-None-Match');
-            if ($ifNoneMatch && ($ifNoneMatch === $etag || $ifNoneMatch === 'W/' . $etag)) {
-                $cachedResponse = $cachedResponse
-                    ->withStatus(304);
             }
 
             $componentContext->replaceHttpResponse($cachedResponse);
