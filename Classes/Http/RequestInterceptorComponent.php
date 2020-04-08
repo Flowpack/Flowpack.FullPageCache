@@ -1,6 +1,7 @@
 <?php
 namespace Flowpack\FullPageCache\Http;
 
+use Flowpack\FullPageCache\Helper\CacheHelper;
 use Neos\Flow\Annotations as Flow;
 use Neos\Cache\Frontend\StringFrontend;
 use Neos\Flow\Http\Component\ComponentChain;
@@ -21,6 +22,12 @@ class RequestInterceptorComponent implements ComponentInterface
      * @var StringFrontend
      */
     protected $cacheFrontend;
+
+    /**
+     * @Flow\Inject
+     * @var CacheHelper
+     */
+    protected $cacheHelper;
 
     /**
      * @var boolean
@@ -60,15 +67,14 @@ class RequestInterceptorComponent implements ComponentInterface
             return;
         }
 
-        if (!empty($request->getUri()->getQuery())) {
+        $entryIdentifier = $this->cacheHelper->getEntryIdentifier($request->getUri());
+        if (is_null($entryIdentifier)) {
             return;
         }
 
         if ($this->sessionManager->getCurrentSession()->isStarted() && !empty($this->sessionDataContainer->getSecurityTokens())) {
             return;
         }
-
-        $entryIdentifier = md5((string)$request->getUri());
 
         $entry = $this->cacheFrontend->get($entryIdentifier);
         if ($entry) {

@@ -1,6 +1,7 @@
 <?php
 namespace Flowpack\FullPageCache\Http;
 
+use Flowpack\FullPageCache\Helper\CacheHelper;
 use Neos\Cache\Frontend\StringFrontend;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Component\ComponentContext;
@@ -17,6 +18,12 @@ class RequestStorageComponent implements ComponentInterface
      * @var StringFrontend
      */
     protected $cacheFrontend;
+
+    /**
+     * @Flow\Inject
+     * @var CacheHelper
+     */
+    protected $cacheHelper;
 
     /**
      * @var boolean
@@ -41,7 +48,7 @@ class RequestStorageComponent implements ComponentInterface
         if ($response->hasHeader('X-From-FullPageCache')) {
             return;
         }
-        
+
         if ($response->hasHeader('Set-Cookie')) {
             return;
         }
@@ -49,7 +56,9 @@ class RequestStorageComponent implements ComponentInterface
         if ($response->hasHeader('X-CacheLifetime')) {
             $lifetime = (int)$response->getHeaderLine('X-CacheLifetime');
             $cacheTags = $response->getHeader('X-CacheTags') ;
-            $entryIdentifier = md5((string)$request->getUri());
+            $entryIdentifier = $this->cacheHelper->getEntryIdentifier($request->getUri());
+            if (is_null($entryIdentifier))
+                return;
 
             if (!is_array($cacheTags)) {
                 $cacheTags = [$cacheTags];

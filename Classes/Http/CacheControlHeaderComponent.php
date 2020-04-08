@@ -1,6 +1,7 @@
 <?php
 namespace Flowpack\FullPageCache\Http;
 
+use Flowpack\FullPageCache\Helper\CacheHelper;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Component\ComponentContext;
 use Neos\Flow\Http\Component\ComponentInterface;
@@ -18,6 +19,11 @@ class CacheControlHeaderComponent implements ComponentInterface
      */
     protected $contentCache;
 
+    /**
+     * @Flow\Inject
+     * @var CacheHelper
+     */
+    protected $cacheHelper;
 
     /**
      * @var boolean
@@ -45,7 +51,7 @@ class CacheControlHeaderComponent implements ComponentInterface
             return;
         }
 
-        if (!empty($request->getUri()->getQuery())) {
+        if (is_null($this->cacheHelper->getEntryIdentifier($request->getUri()))) {
             return;
         }
 
