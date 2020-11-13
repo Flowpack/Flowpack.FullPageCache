@@ -1,0 +1,139 @@
+<?php
+declare(strict_types=1);
+
+namespace Flowpack\FullPageCache\Middleware;
+
+use Neos\Flow\Annotations as Flow;
+use Neos\Cache\Frontend\VariableFrontend;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use function GuzzleHttp\Psr7\parse_response;
+use function GuzzleHttp\Psr7\str;
+
+class RequestCacheMiddleware implements MiddlewareInterface
+{
+    public const HEADER_ENABLED = 'X-FullPageCache-Enabled';
+
+    public const HEADER_INFO = 'X-FullPageCache-Info';
+
+    public const HEADER_LIFTIME = 'X-FullPageCache-Lifetime';
+
+    public const HEADER_TAGS = 'X-FullPageCache-Tags';
+
+    /**
+     * @var boolean
+     * @Flow\InjectConfiguration(path="enabled")
+     */
+    protected $enabled;
+
+    /**
+     * @Flow\Inject
+     * @var VariableFrontend
+     */
+    protected $cacheFrontend;
+
+    /**
+     * @var array
+     * @Flow\InjectConfiguration(path="request.queryParams.allow")
+     */
+    protected $allowedQueryParams;
+
+    /**
+     * @var array
+     * @Flow\InjectConfiguration(path="request.queryParams.ignore")
+     */
+    protected $ignoredQueryParams;
+
+    /**
+     * @var array
+     * @Flow\InjectConfiguration(path="request.cookieParams.ignore")
+     */
+    protected $ignoredCookieParams;
+
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
+    {
+        if (!$this->enabled) {
+            return $next->handle($request);
+        }
+
+        $entryIdentifier = $this->getCacheIdentifierForRequestIfCacheable($request);
+
+        if (is_null($entryIdentifier)) {
+            return $next->handle($request)->withHeader(self::HEADER_INFO, 'SKIP');
+        }
+
+        if ($cacheEntry = $this->cacheFrontend->get($entryIdentifier)) {
+            $age = time() - $cacheEntry['timestamp'];
+            $response = parse_response($cacheEntry['response']);
+            return $response
+                ->withHeader('Age', $age)
+                ->withHeader(self::HEADER_INFO, 'HIT: ' . $entryIdentifier);
+        }
+
+        $response = $next->handle($request->withHeader(self::HEADER_ENABLED, ''));
+
+        if ($response->hasHeader(self::HEADER_LIFTIME)) {
+            $lifetime = (int)$response->getHeaderLine(self::HEADER_LIFTIME);
+            $tags = $response->getHeader(self::HEADER_TAGS);
+            $response = $response
+                ->withoutHeader(self::HEADER_LIFTIME)
+                ->withoutHeader(self::HEADER_TAGS)
+                ->withHeader(self::HEADER_INFO, 'MISS: ' . $entryIdentifier);
+
+
+            $this->cacheFrontend->set($entryIdentifier,[ 'timestamp' => time(), 'response' => str($response) ], $tags, $lifetime);
+            $response->getBody()->rewind();
+        }
+
+        return $response;
+    }
+
+
+    /**
+     * @param ServerRequestInterface $request
+     * @return string|null
+     */
+    protected function getCacheIdentifierForRequestIfCacheable(ServerRequestInterface $request): ?string
+    {
+        if (!in_array(strtoupper($request->getMethod()), ['GET', 'HEAD'])) {
+            return null;
+        }
+
+        $requestQueryParams = $request->getQueryParams();
+        $allowedQueryParams = [];
+        $ignoredQueryParams = [];
+        $disallowedQueryParams = [];
+        foreach ($requestQueryParams as $key => $value) {
+            switch (true) {
+                case (in_array($key, $this->allowedQueryParams)):
+                    $allowedQueryParams[$key] = $value;
+                    break;
+                case (in_array($key, $this->ignoredQueryParams)):
+                    $ignoredQueryParams[$key] = $value;
+                    break;
+                default:
+                    $disallowedQueryParams[$key] = $value;
+            }
+        }
+
+        if (count($disallowedQueryParams) > 0) {
+            return null;
+        }
+
+        $requestCookieParams = $request->getCookieParams();
+        $disallowedCookieParams = [];
+        foreach ($requestCookieParams as $key => $value) {
+            if (!in_array($key, $this->ignoredCookieParams)) {
+                $disallowedCookieParams[$key] = $value;
+            }
+        }
+
+        if (count($disallowedCookieParams) > 0) {
+            return null;
+        }
+
+        return md5((string)$request->getUri()->withQuery(http_build_query($allowedQueryParams)));
+    }
+}

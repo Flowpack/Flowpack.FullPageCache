@@ -1,4 +1,4 @@
-Flowpack\FullPageCache\Http\CacheControlHeaderComponent:
+Flowpack\FullPageCache\Middleware\CacheHeaderMiddleware:
   properties:
     contentCache:
       object:
@@ -8,17 +8,7 @@ Flowpack\FullPageCache\Http\CacheControlHeaderComponent:
           1:
             value: Neos_Fusion_Content
 
-Flowpack\FullPageCache\Http\RequestInterceptorComponent:
-  properties:
-    cacheFrontend:
-      object:
-        factoryObjectName: Neos\Flow\Cache\CacheManager
-        factoryMethodName: getCache
-        arguments:
-          1:
-            value: Flowpack_FullPageCache_Entries
-
-Flowpack\FullPageCache\Http\RequestStorageComponent:
+Flowpack\FullPageCache\Middleware\RequestCacheMiddleware:
   properties:
     cacheFrontend:
       object:
