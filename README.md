@@ -31,7 +31,7 @@ Flowpack:
       # a request will only qualify for caching if it contains no cookieParams that
       # are not ignored.
       cookieParams:
-        # ignored cookie params exclude cookies that are handled by the frontenecn
+        # ignored cookie params exclude cookies that are handled by the frontend
         # and are not relevant for the backend. A usecase would be gdpr consent cookies
         # if they are only used on the client side
         ignore: []
