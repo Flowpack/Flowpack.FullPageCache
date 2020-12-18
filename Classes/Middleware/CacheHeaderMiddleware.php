@@ -69,6 +69,9 @@ class CacheHeaderMiddleware implements MiddlewareInterface
                 ->withHeader('CacheControl', 'public, max-age=' . $publicLifetime);
         }
 
+        $response = $response
+            ->withHeader(RequestCacheMiddleware::HEADER_ENABLED, "");
+
         if ($tags) {
             $response = $response
                 ->withHeader(RequestCacheMiddleware::HEADER_TAGS, $tags);

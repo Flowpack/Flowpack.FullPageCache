@@ -74,17 +74,17 @@ class RequestCacheMiddleware implements MiddlewareInterface
 
         $response = $next->handle($request->withHeader(self::HEADER_ENABLED, ''));
 
-        if ($response->hasHeader(self::HEADER_LIFTIME)) {
-            $lifetime = (int)$response->getHeaderLine(self::HEADER_LIFTIME);
-            $tags = $response->getHeader(self::HEADER_TAGS);
+        if ($response->hasHeader(self::HEADER_ENABLED)) {
+            $lifetime = $response->hasHeader(self::HEADER_LIFTIME) ? (int)$response->getHeaderLine(self::HEADER_LIFTIME) : null;
+            $tags = $response->hasHeader(self::HEADER_TAGS) ? $response->getHeader(self::HEADER_TAGS) : [];
             $response = $response
+                ->withoutHeader(self::HEADER_ENABLED)
                 ->withoutHeader(self::HEADER_LIFTIME)
-                ->withoutHeader(self::HEADER_TAGS)
-                ->withHeader(self::HEADER_INFO, 'MISS: ' . $entryIdentifier);
-
+                ->withoutHeader(self::HEADER_TAGS);
 
             $this->cacheFrontend->set($entryIdentifier,[ 'timestamp' => time(), 'response' => str($response) ], $tags, $lifetime);
             $response->getBody()->rewind();
+            return $response->withHeader(self::HEADER_INFO, 'MISS: ' . $entryIdentifier);
         }
 
         return $response;
