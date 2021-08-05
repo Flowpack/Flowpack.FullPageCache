@@ -20,10 +20,6 @@ Flowpack:
     # set to 0 if you do not want to send public CacheControl headers
     maxPublicCacheTime: 86400
 
-    # the maximum public cache control header sent
-    # set to 0 if you do not want to send public CacheControl headers
-    maxPublicCacheTime: 86400
-
     # requests have to fulfill certain conditions for beeing cached
     request:
       # !!! Only the http methods "GET" and "HEAD" are supported !!!
