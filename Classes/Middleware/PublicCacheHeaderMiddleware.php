@@ -32,7 +32,7 @@ class PublicCacheHeaderMiddleware implements MiddlewareInterface
 
         $response = $next->handle($request);
 
-        if ($response->hasHeader("CacheControl")) {
+        if ($response->hasHeader("Cache-Control")) {
             return $response;
         }
 
@@ -52,7 +52,7 @@ class PublicCacheHeaderMiddleware implements MiddlewareInterface
             $response->getBody()->rewind();
             $response = $response
                 ->withHeader('ETag', '"' . $entryContentHash . '"')
-                ->withHeader('CacheControl', 'public, max-age=' . $publicLifetime);
+                ->withHeader('Cache-Control', 'public, max-age=' . $publicLifetime);
         }
 
         return $response;
