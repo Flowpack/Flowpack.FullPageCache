@@ -32,7 +32,7 @@ class PublicCacheHeaderMiddleware implements MiddlewareInterface
 
         $response = $next->handle($request);
 
-        if ($response->hasHeader("Cache-Control")) {
+        if ($response->hasHeader("Cache-Control") || !$response->hasHeader(RequestCacheMiddleware::HEADER_ENABLED)) {
             return $response;
         }
 

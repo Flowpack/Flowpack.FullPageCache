@@ -1,4 +1,4 @@
-Flowpack\FullPageCache\Middleware\CacheHeaderMiddleware:
+Flowpack\FullPageCache\Middleware\FusionAutoconfigurationMiddleware:
   properties:
     contentCache:
       object:

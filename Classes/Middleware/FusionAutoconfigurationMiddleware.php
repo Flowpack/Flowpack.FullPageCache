@@ -11,8 +11,9 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Flowpack\FullPageCache\Aspects\ContentCacheAspect;
 use Flowpack\FullPageCache\Cache\MetadataAwareStringFrontend;
 
-class CacheHeaderMiddleware implements MiddlewareInterface
+class FusionAutoconfigurationMiddleware implements MiddlewareInterface
 {
+    public const HEADER_ENABLED = 'X-FullPageCache-EnableFusionAutoconfiguration';
 
     /**
      * @Flow\Inject
@@ -35,10 +36,16 @@ class CacheHeaderMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
     {
         if (!$this->enabled || !$request->hasHeader(RequestCacheMiddleware::HEADER_ENABLED)) {
-            return $next->handle($request);
+            return $next->handle($request)->withoutHeader(self::HEADER_ENABLED);
         }
 
         $response = $next->handle($request);
+
+        if (!$response->hasHeader(self::HEADER_ENABLED)) {
+            return $response;
+        } else {
+            $response = $response->withoutHeader(self::HEADER_ENABLED);
+        }
 
         list($hasUncachedSegments, $tags, $lifetime) = $this->getFusionCacheInformations();
 
