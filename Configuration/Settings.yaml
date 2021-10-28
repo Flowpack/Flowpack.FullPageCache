@@ -38,6 +38,9 @@ Neos:
         'fullPageRequestCache':
           middleware: 'Flowpack\FullPageCache\Middleware\RequestCacheMiddleware'
           position: 'after trustedProxies'
+        'fullPagePublicCacheHeader':
+          middleware: 'Flowpack\FullPageCache\Middleware\PublicCacheHeaderMiddleware'
+          position: 'before fullPageCacheHeader'
         'fullPageCacheHeader':
           middleware: 'Flowpack\FullPageCache\Middleware\CacheHeaderMiddleware'
           position: 'after fullPageRequestCache'

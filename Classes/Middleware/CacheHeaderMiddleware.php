@@ -32,12 +32,6 @@ class CacheHeaderMiddleware implements MiddlewareInterface
      */
     protected $enabled;
 
-    /**
-     * @var boolean
-     * @Flow\InjectConfiguration(path="maxPublicCacheTime")
-     */
-    protected $maxPublicCacheTime;
-
     public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
     {
         if (!$this->enabled || !$request->hasHeader(RequestCacheMiddleware::HEADER_ENABLED)) {
@@ -50,23 +44,6 @@ class CacheHeaderMiddleware implements MiddlewareInterface
 
         if ($response->hasHeader('Set-Cookie') || $hasUncachedSegments) {
             return $response;
-        }
-
-        $publicLifetime = 0;
-        if ($this->maxPublicCacheTime > 0) {
-            if ($lifetime > 0 && $lifetime < $this->maxPublicCacheTime) {
-                $publicLifetime = $lifetime;
-            } else {
-                $publicLifetime = $this->maxPublicCacheTime;
-            }
-        }
-
-        if ($publicLifetime > 0) {
-            $entryContentHash = md5($response->getBody()->getContents());
-            $response->getBody()->rewind();
-            $response = $response
-                ->withHeader('ETag', '"' . $entryContentHash . '"')
-                ->withHeader('CacheControl', 'public, max-age=' . $publicLifetime);
         }
 
         $response = $response
