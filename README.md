@@ -54,19 +54,18 @@ You can also move the cache backend to something faster if available, to improve
 How it works
 ------------
 
-The package defines three http middlewares:
+The package defines two http middlewares:
   
-- `fullPageRequestCache`: If a request is cacheble the cache is asked first and only if no response is found the 
+- `RequestCacheMiddleware`: If a request is cacheable the cache is asked first and only if no response is found the 
   request is passed down the middleware chain. The cache lifetime and tags are determined from the 
   `X-FullPageCache-Enabled`, `X-FullPageCache-Lifetime` and `X-FullPageCache-Tags` that are set by upstream middlewares 
-  or controllers. 
+  or controllers. Additionally the middleware adds `ETag` and `CacheControl` Headers taking the lifetime and setting
+  `maxPublicCacheTime` into account.
 
-- `fullPageCachePublicHeader` : Set `ETag` and `CacheControl` Headers based on the `X-FullPageCache-Enabled` and the 
-  `X-FullPageCache-Lifetime` headers taking the `maxPublicCacheTime` into account.
-  
-- `fullPageCacheFusionAutoconfiguration`: Connects to the fusion cache and extracts tags plus the allowed lifetime which is then 
+- `FusionAutoconfigurationMiddleware`: Connects to the fusion cache and extracts tags plus the allowed lifetime which is then 
   stored in the response headers `X-FullPageCache-Enabled`, `X-FullPageCache-Lifetime` and `X-FullPageCache-Tags`. 
-  This component expects a header `X-FullPageCache-EnableFusionAutoconfiguration` which is set automatically for `Neos.Neos:Page`.
+  This component is only active if the header `X-FullPageCache-EnableFusionAutoconfiguration` is present in the response 
+  which is set automatically for `Neos.Neos:Page`.
 
 Custom controllers that want to control the caching behavior directly can set the headers `X-FullPageCache-Enabled`, 
 `X-FullPageCache-Lifetime` and `X-FullPageCache-Tags` directly while fusion based controllers can enable the autoconfiguration

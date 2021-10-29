@@ -38,12 +38,9 @@ Neos:
         'fullPageRequestCache':
           middleware: 'Flowpack\FullPageCache\Middleware\RequestCacheMiddleware'
           position: 'after trustedProxies'
-        'fullPageCachePublicHeader':
-          middleware: 'Flowpack\FullPageCache\Middleware\PublicCacheHeaderMiddleware'
-          position: 'after fullPageRequestCache 20'
         'fullPageCacheFusionAutoconfiguration':
           middleware: 'Flowpack\FullPageCache\Middleware\FusionAutoconfigurationMiddleware'
-          position: 'after fullPageRequestCache 10'
+          position: 'after fullPageRequestCache'
   Neos:
     fusion:
       autoInclude:
