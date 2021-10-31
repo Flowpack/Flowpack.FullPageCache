@@ -59,7 +59,7 @@ The package defines two http middlewares:
 - `RequestCacheMiddleware`: If a request is cacheable the cache is asked first and only if no response is found the 
   request is passed down the middleware chain. The cache lifetime and tags are determined from the 
   `X-FullPageCache-Enabled`, `X-FullPageCache-Lifetime` and `X-FullPageCache-Tags` that are set by upstream middlewares 
-  or controllers. Additionally the middleware adds `ETag` and `CacheControl` Headers taking the lifetime and setting
+  or controllers. Additionally the middleware adds `ETag` and `Cache-Control` Headers taking the lifetime and setting
   `maxPublicCacheTime` into account.
 
 - `FusionAutoconfigurationMiddleware`: Connects to the fusion cache and extracts tags plus the allowed lifetime which is then 
