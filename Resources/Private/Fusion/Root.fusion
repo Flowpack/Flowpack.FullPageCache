@@ -1,0 +1,8 @@
+prototype(Neos.Neos:Page) {
+    httpResponseHead {
+        headers {
+            'X-FullPageCache-EnableFusionAutoconfiguration' = ''
+            'X-FullPageCache-EnableFusionAutoconfiguration'.@if.isEnabled = ${Configuration.setting('Flowpack.FullPageCache.enabled') == true}
+        }
+    }
+}

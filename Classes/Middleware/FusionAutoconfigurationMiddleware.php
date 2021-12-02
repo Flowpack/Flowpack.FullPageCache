@@ -11,8 +11,9 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Flowpack\FullPageCache\Aspects\ContentCacheAspect;
 use Flowpack\FullPageCache\Cache\MetadataAwareStringFrontend;
 
-class CacheHeaderMiddleware implements MiddlewareInterface
+class FusionAutoconfigurationMiddleware implements MiddlewareInterface
 {
+    public const HEADER_ENABLED = 'X-FullPageCache-EnableFusionAutoconfiguration';
 
     /**
      * @Flow\Inject
@@ -32,41 +33,24 @@ class CacheHeaderMiddleware implements MiddlewareInterface
      */
     protected $enabled;
 
-    /**
-     * @var boolean
-     * @Flow\InjectConfiguration(path="maxPublicCacheTime")
-     */
-    protected $maxPublicCacheTime;
-
     public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
     {
         if (!$this->enabled || !$request->hasHeader(RequestCacheMiddleware::HEADER_ENABLED)) {
-            return $next->handle($request);
+            return $next->handle($request)->withoutHeader(self::HEADER_ENABLED);
         }
 
         $response = $next->handle($request);
+
+        if (!$response->hasHeader(self::HEADER_ENABLED)) {
+            return $response;
+        } else {
+            $response = $response->withoutHeader(self::HEADER_ENABLED);
+        }
 
         list($hasUncachedSegments, $tags, $lifetime) = $this->getFusionCacheInformations();
 
         if ($response->hasHeader('Set-Cookie') || $hasUncachedSegments) {
             return $response;
-        }
-
-        $publicLifetime = 0;
-        if ($this->maxPublicCacheTime > 0) {
-            if ($lifetime > 0 && $lifetime < $this->maxPublicCacheTime) {
-                $publicLifetime = $lifetime;
-            } else {
-                $publicLifetime = $this->maxPublicCacheTime;
-            }
-        }
-
-        if ($publicLifetime > 0) {
-            $entryContentHash = md5($response->getBody()->getContents());
-            $response->getBody()->rewind();
-            $response = $response
-                ->withHeader('ETag', '"' . $entryContentHash . '"')
-                ->withHeader('CacheControl', 'public, max-age=' . $publicLifetime);
         }
 
         $response = $response

@@ -52,6 +52,12 @@ class RequestCacheMiddleware implements MiddlewareInterface
      */
     protected $ignoredCookieParams;
 
+    /**
+     * @var boolean
+     * @Flow\InjectConfiguration(path="maxPublicCacheTime")
+     */
+    protected $maxPublicCacheTime;
+
     public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
     {
         if (!$this->enabled) {
@@ -81,6 +87,23 @@ class RequestCacheMiddleware implements MiddlewareInterface
                 ->withoutHeader(self::HEADER_ENABLED)
                 ->withoutHeader(self::HEADER_LIFTIME)
                 ->withoutHeader(self::HEADER_TAGS);
+
+            $publicLifetime = 0;
+            if ($this->maxPublicCacheTime > 0) {
+                if ($lifetime > 0 && $lifetime < $this->maxPublicCacheTime) {
+                    $publicLifetime = $lifetime;
+                } else {
+                    $publicLifetime = $this->maxPublicCacheTime;
+                }
+            }
+
+            if ($publicLifetime > 0) {
+                $entryContentHash = md5($response->getBody()->getContents());
+                $response->getBody()->rewind();
+                $response = $response
+                    ->withHeader('ETag', '"' . $entryContentHash . '"')
+                    ->withHeader('Cache-Control', 'public, max-age=' . $publicLifetime);
+            }
 
             $this->cacheFrontend->set($entryIdentifier,[ 'timestamp' => time(), 'response' => str($response) ], $tags, $lifetime);
             $response->getBody()->rewind();
