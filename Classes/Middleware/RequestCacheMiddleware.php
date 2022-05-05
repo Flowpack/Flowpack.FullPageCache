@@ -18,45 +18,30 @@ class RequestCacheMiddleware implements MiddlewareInterface
 
     public const HEADER_INFO = 'X-FullPageCache-Info';
 
-    public const HEADER_LIFTIME = 'X-FullPageCache-Lifetime';
+    public const HEADER_LIFETIME = 'X-FullPageCache-Lifetime';
 
     public const HEADER_TAGS = 'X-FullPageCache-Tags';
 
-    /**
-     * @var boolean
-     * @Flow\InjectConfiguration(path="enabled")
-     */
-    protected $enabled;
+    #[Flow\InjectConfiguration('enabled')]
+    protected bool $enabled;
 
     /**
-     * @Flow\Inject
      * @var VariableFrontend
      */
+    #[Flow\Inject]
     protected $cacheFrontend;
 
-    /**
-     * @var array
-     * @Flow\InjectConfiguration(path="request.queryParams.allow")
-     */
-    protected $allowedQueryParams;
+    #[Flow\InjectConfiguration('request.queryParams.allow')]
+    protected array $allowedQueryParams;
 
-    /**
-     * @var array
-     * @Flow\InjectConfiguration(path="request.queryParams.ignore")
-     */
-    protected $ignoredQueryParams;
+    #[Flow\InjectConfiguration('request.queryParams.ignore')]
+    protected array $ignoredQueryParams;
 
-    /**
-     * @var array
-     * @Flow\InjectConfiguration(path="request.cookieParams.ignore")
-     */
-    protected $ignoredCookieParams;
+    #[Flow\InjectConfiguration('request.cookieParams.ignore')]
+    protected array $ignoredCookieParams;
 
-    /**
-     * @var boolean
-     * @Flow\InjectConfiguration(path="maxPublicCacheTime")
-     */
-    protected $maxPublicCacheTime;
+    #[Flow\InjectConfiguration('maxPublicCacheTime')]
+    protected int $maxPublicCacheTime;
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
     {
@@ -81,11 +66,11 @@ class RequestCacheMiddleware implements MiddlewareInterface
         $response = $next->handle($request->withHeader(self::HEADER_ENABLED, ''));
 
         if ($response->hasHeader(self::HEADER_ENABLED)) {
-            $lifetime = $response->hasHeader(self::HEADER_LIFTIME) ? (int)$response->getHeaderLine(self::HEADER_LIFTIME) : null;
+            $lifetime = $response->hasHeader(self::HEADER_LIFETIME) ? (int)$response->getHeaderLine(self::HEADER_LIFETIME) : null;
             $tags = $response->hasHeader(self::HEADER_TAGS) ? $response->getHeader(self::HEADER_TAGS) : [];
             $response = $response
                 ->withoutHeader(self::HEADER_ENABLED)
-                ->withoutHeader(self::HEADER_LIFTIME)
+                ->withoutHeader(self::HEADER_LIFETIME)
                 ->withoutHeader(self::HEADER_TAGS);
 
             $publicLifetime = 0;
@@ -113,11 +98,6 @@ class RequestCacheMiddleware implements MiddlewareInterface
         return $response;
     }
 
-
-    /**
-     * @param ServerRequestInterface $request
-     * @return string|null
-     */
     protected function getCacheIdentifierForRequestIfCacheable(ServerRequestInterface $request): ?string
     {
         if (!in_array(strtoupper($request->getMethod()), ['GET', 'HEAD'])) {
@@ -126,7 +106,6 @@ class RequestCacheMiddleware implements MiddlewareInterface
 
         $requestQueryParams = $request->getQueryParams();
         $allowedQueryParams = [];
-        $ignoredQueryParams = [];
         $disallowedQueryParams = [];
         foreach ($requestQueryParams as $key => $value) {
             switch (true) {
@@ -134,7 +113,6 @@ class RequestCacheMiddleware implements MiddlewareInterface
                     $allowedQueryParams[$key] = $value;
                     break;
                 case (in_array($key, $this->ignoredQueryParams)):
-                    $ignoredQueryParams[$key] = $value;
                     break;
                 default:
                     $disallowedQueryParams[$key] = $value;

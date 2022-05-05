@@ -13,42 +13,35 @@ use Psr\Log\LoggerInterface;
  */
 class MetadataAwareStringFrontend extends StringFrontend
 {
-    const SEPARATOR = '|';
+    protected const SEPARATOR = '|';
 
     /**
      * Store metadata of all loaded cache entries indexed by identifier
-     *
-     * @var array
      */
-    protected $metadata = [];
+    protected array $metadata = [];
 
-    /**
-     * @Flow\Inject
-     * @var Environment
-     */
-    protected $environment;
+    #[Flow\Inject]
+    protected Environment $environment;
 
-    /**
-     * @Flow\Inject
-     * @var LoggerInterface
-     */
-    protected $logger;
+    #[Flow\Inject]
+    protected LoggerInterface $logger;
 
     /**
      * Set a cache entry and store additional metadata (tags and lifetime)
      *
      * {@inheritdoc}
      */
-    public function set(string $entryIdentifier, $content, array $tags = [], int $lifetime = null)
+    public function set(string $entryIdentifier, $string, array $tags = [], int $lifetime = null): void
     {
-        $content = $this->insertMetadata($content, $entryIdentifier, $tags, $lifetime);
+        $content = $this->insertMetadata($string, $entryIdentifier, $tags, $lifetime);
         parent::set($entryIdentifier, $content, $tags, $lifetime);
     }
 
     /**
      * {@inheritdoc}
+     * @throws InvalidDataTypeException
      */
-    public function get(string $entryIdentifier)
+    public function get(string $entryIdentifier): bool|string
     {
         $content = parent::get($entryIdentifier);
         if ($content !== false) {
@@ -60,6 +53,7 @@ class MetadataAwareStringFrontend extends StringFrontend
 
     /**
      * {@inheritdoc}
+     * @throws InvalidDataTypeException
      */
     public function getByTag(string $tag): array
     {
@@ -74,18 +68,13 @@ class MetadataAwareStringFrontend extends StringFrontend
     /**
      * Insert metadata into the content
      *
-     * @param string $content
      * @param string $entryIdentifier The identifier metadata
      * @param array $tags The tags metadata
-     * @param integer $lifetime The lifetime metadata
+     * @param integer|null $lifetime The lifetime metadata
      * @return string The content including the serialized metadata
-     * @throws InvalidDataTypeException
      */
-    protected function insertMetadata($content, $entryIdentifier, array $tags, $lifetime)
+    protected function insertMetadata(string $content, string $entryIdentifier, array $tags, int $lifetime = null): string
     {
-        if (!is_string($content)) {
-            throw new InvalidDataTypeException('Given data is of type "' . gettype($content) . '", but a string is expected for string cache.', 1433155737);
-        }
         $metadata = [
             'identifier' => $entryIdentifier,
             'tags' => $tags,
@@ -105,7 +94,7 @@ class MetadataAwareStringFrontend extends StringFrontend
      * @return string The content without metadata
      * @throws InvalidDataTypeException
      */
-    protected function extractMetadata($entryIdentifier, $content)
+    protected function extractMetadata(string $entryIdentifier, string $content): string
     {
         $separatorIndex = strpos($content, self::SEPARATOR);
         if ($separatorIndex === false) {
@@ -136,7 +125,7 @@ class MetadataAwareStringFrontend extends StringFrontend
     /**
      * @return array Metadata of all loaded entries (indexed by identifier)
      */
-    public function getAllMetadata()
+    public function getAllMetadata(): array
     {
         return $this->metadata;
     }
