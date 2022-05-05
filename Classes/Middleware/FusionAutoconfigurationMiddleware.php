@@ -44,7 +44,7 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
 
         $response = $response->withoutHeader(self::HEADER_ENABLED);
 
-        [$hasUncachedSegments, $tags, $lifetime] = $this->getFusionCacheInformations();
+        [$hasUncachedSegments, $tags, $lifetime] = $this->getFusionCacheInformation();
 
         if ($hasUncachedSegments || $response->hasHeader('Set-Cookie')) {
             return $response;
@@ -71,7 +71,7 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
      *
      * @return array with first "hasUncachedSegments", "tags" and "lifetime"
      */
-    public function getFusionCacheInformations(): array
+    public function getFusionCacheInformation(): array
     {
         $lifetime = null;
         $tags = [];
