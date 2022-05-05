@@ -46,10 +46,8 @@ class ContentCacheAspect
         $object = $joinPoint->getProxy();
 
         $tags = ObjectAccess::getProperty($object, 'tagsToFlush', true);
-        foreach ($tags as $tag => $_) {
-            $tag = $this->sanitizeTag($tag);
-            $this->cacheFrontend->flushByTag($tag);
-        }
+        $tags = array_map([$this, 'sanitizeTag'],$tags);
+        $this->cacheFrontend->flushByTags($tags);
     }
 
     /**
