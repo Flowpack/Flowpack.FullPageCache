@@ -9,7 +9,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use function GuzzleHttp\Psr7\parse_response;
+use GuzzleHttp\Psr7\Message;
 use function GuzzleHttp\Psr7\str;
 
 class RequestCacheMiddleware implements MiddlewareInterface
@@ -72,7 +72,7 @@ class RequestCacheMiddleware implements MiddlewareInterface
 
         if ($cacheEntry = $this->cacheFrontend->get($entryIdentifier)) {
             $age = time() - $cacheEntry['timestamp'];
-            $response = parse_response($cacheEntry['response']);
+            $response = Message::parseResponse($cacheEntry['response']);
             return $response
                 ->withHeader('Age', $age)
                 ->withHeader(self::HEADER_INFO, 'HIT: ' . $entryIdentifier);
@@ -105,7 +105,7 @@ class RequestCacheMiddleware implements MiddlewareInterface
                     ->withHeader('Cache-Control', 'public, max-age=' . $publicLifetime);
             }
 
-            $this->cacheFrontend->set($entryIdentifier,[ 'timestamp' => time(), 'response' => str($response) ], $tags, $lifetime);
+            $this->cacheFrontend->set($entryIdentifier,[ 'timestamp' => time(), 'response' => Message::toString($response) ], $tags, $lifetime);
             $response->getBody()->rewind();
             return $response->withHeader(self::HEADER_INFO, 'MISS: ' . $entryIdentifier);
         }
