@@ -30,13 +30,13 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
     #[Flow\InjectConfiguration('enabled')]
     protected bool $enabled;
 
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if (!$this->enabled || !$request->hasHeader(RequestCacheMiddleware::HEADER_ENABLED)) {
-            return $next->handle($request)->withoutHeader(self::HEADER_ENABLED);
+            return $handler->handle($request)->withoutHeader(self::HEADER_ENABLED);
         }
 
-        $response = $next->handle($request);
+        $response = $handler->handle($request);
 
         if (!$response->hasHeader(self::HEADER_ENABLED)) {
             return $response;
@@ -76,7 +76,7 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
         $lifetime = null;
         $tags = [];
         $entriesMetadata = $this->contentCache->getAllMetadata();
-        foreach ($entriesMetadata as $identifier => $metadata) {
+        foreach ($entriesMetadata as $metadata) {
             $entryTags = $metadata['tags'] ?? [];
             $entryLifetime = $metadata['lifetime'] ?? null;
             if ($entryLifetime !== null) {

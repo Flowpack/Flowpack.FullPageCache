@@ -3,14 +3,13 @@ declare(strict_types=1);
 
 namespace Flowpack\FullPageCache\Middleware;
 
+use GuzzleHttp\Psr7\Message;
 use Neos\Flow\Annotations as Flow;
 use Neos\Cache\Frontend\VariableFrontend;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use GuzzleHttp\Psr7\Message;
-use function GuzzleHttp\Psr7\str;
 
 class RequestCacheMiddleware implements MiddlewareInterface
 {
@@ -43,16 +42,16 @@ class RequestCacheMiddleware implements MiddlewareInterface
     #[Flow\InjectConfiguration('maxPublicCacheTime')]
     protected int $maxPublicCacheTime;
 
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if (!$this->enabled) {
-            return $next->handle($request);
+            return $handler->handle($request);
         }
 
         $entryIdentifier = $this->getCacheIdentifierForRequestIfCacheable($request);
 
         if (is_null($entryIdentifier)) {
-            return $next->handle($request)->withHeader(self::HEADER_INFO, 'SKIP');
+            return $handler->handle($request)->withHeader(self::HEADER_INFO, 'SKIP');
         }
 
         if ($cacheEntry = $this->cacheFrontend->get($entryIdentifier)) {
@@ -63,7 +62,7 @@ class RequestCacheMiddleware implements MiddlewareInterface
                 ->withHeader(self::HEADER_INFO, 'HIT: ' . $entryIdentifier);
         }
 
-        $response = $next->handle($request->withHeader(self::HEADER_ENABLED, ''));
+        $response = $handler->handle($request->withHeader(self::HEADER_ENABLED, ''));
 
         if ($response->hasHeader(self::HEADER_ENABLED)) {
             $lifetime = $response->hasHeader(self::HEADER_LIFETIME) ? (int)$response->getHeaderLine(self::HEADER_LIFETIME) : null;
