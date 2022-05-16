@@ -13,8 +13,11 @@ class ContentCacheAspect
 {
     private bool $hadUncachedSegments = false;
 
+    /**
+     * @var StringFrontend
+     */
     #[Flow\Inject]
-    protected StringFrontend $cacheFrontend;
+    protected $cacheFrontend;
 
     /**
      * @Flow\Before("method(Neos\Fusion\Core\Cache\ContentCache->(createUncachedSegment)())")

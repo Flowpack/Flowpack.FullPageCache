@@ -20,11 +20,17 @@ class MetadataAwareStringFrontend extends StringFrontend
      */
     protected array $metadata = [];
 
+    /**
+     * @var Environment
+     */
     #[Flow\Inject]
-    protected Environment $environment;
+    protected $environment;
 
+    /**
+     * @var LoggerInterface
+     */
     #[Flow\Inject]
-    protected LoggerInterface $logger;
+    protected $logger;
 
     /**
      * Set a cache entry and store additional metadata (tags and lifetime)
