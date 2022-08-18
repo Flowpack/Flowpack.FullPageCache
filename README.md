@@ -31,6 +31,11 @@ Flowpack:
         # and are not relevant for the backend. A usecase would be gdpr consent cookies
         # if they are only used on the client side
         ignore: []
+        
+        # ignored cookie params based on prefix exclude cookies that are handled by the frontend
+        # and are not relevant for the backend. A usecase would be affiliate cookies which are 
+        # dynamically generated if they are only used on the client side
+        ignorePrefix: []
 
       # a request will only qualify for caching if it only contains queryParams that
       # are allowed or ignored. All other arguments will prevent caching.
@@ -43,6 +48,11 @@ Flowpack:
         # prevent caching either. Use this for arguments that are meaningless for
         # the backend like utm_campaign
         ignore: []
+
+        # ignored prefix arguments are not part of the cache identifier but do not
+        # prevent caching either. Use this for arguments that are meaningless for
+        # the backend like utm_
+        ignorePrefix: []
 ```
 
 You can also move the cache backend to something faster if available, to improve performance even more.

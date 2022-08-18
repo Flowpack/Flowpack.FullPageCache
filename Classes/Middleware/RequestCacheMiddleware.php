@@ -48,9 +48,21 @@ class RequestCacheMiddleware implements MiddlewareInterface
 
     /**
      * @var array
+     * @Flow\InjectConfiguration(path="request.queryParams.ignorePrefix")
+     */
+    protected $ignoredQueryPrefix;
+
+    /**
+     * @var array
      * @Flow\InjectConfiguration(path="request.cookieParams.ignore")
      */
     protected $ignoredCookieParams;
+
+    /**
+     * @var array
+     * @Flow\InjectConfiguration(path="request.cookieParams.ignorePrefix")
+     */
+    protected $ignoredCookiePrefix;
 
     /**
      * @var boolean
@@ -136,6 +148,9 @@ class RequestCacheMiddleware implements MiddlewareInterface
                 case (in_array($key, $this->ignoredQueryParams)):
                     $ignoredQueryParams[$key] = $value;
                     break;
+                case (array_reduce($this->ignoredQueryPrefix, fn ($carry, $prefix) => $carry || strpos($key, $prefix) === 0, false)):
+                    $ignoredQueryParams[$key] = $value;
+                    break;
                 default:
                     $disallowedQueryParams[$key] = $value;
             }
@@ -148,7 +163,8 @@ class RequestCacheMiddleware implements MiddlewareInterface
         $requestCookieParams = $request->getCookieParams();
         $disallowedCookieParams = [];
         foreach ($requestCookieParams as $key => $value) {
-            if (!in_array($key, $this->ignoredCookieParams)) {
+            $prefixed = array_reduce($this->ignoredCookiePrefix, fn ($carry, $prefix) => $carry || strpos($key, $prefix) === 0, false);
+            if (!in_array($key, $this->ignoredCookieParams) && !$prefixed) {
                 $disallowedCookieParams[$key] = $value;
             }
         }
