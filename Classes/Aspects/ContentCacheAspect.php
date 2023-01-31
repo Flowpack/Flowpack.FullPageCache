@@ -4,44 +4,34 @@ namespace Flowpack\FullPageCache\Aspects;
 use Neos\Cache\Frontend\StringFrontend;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Aop\JoinPointInterface;
+use Neos\Utility\Exception\PropertyNotAccessibleException;
 use Neos\Utility\ObjectAccess;
 
-/**
- * @Flow\Aspect
- * @Flow\Scope("singleton")
- */
+#[Flow\Aspect]
+#[Flow\Scope("singleton")]
 class ContentCacheAspect
 {
-    private $hadUncachedSegments = false;
-
-    private $cacheTags = [];
+    private bool $hadUncachedSegments = false;
 
     /**
-     * @var null|int
-     */
-    private $shortestLifetime = null;
-
-    /**
-     * @Flow\Inject
      * @var StringFrontend
      */
+    #[Flow\Inject]
     protected $cacheFrontend;
 
     /**
      * @Flow\Before("method(Neos\Fusion\Core\Cache\ContentCache->(createUncachedSegment)())")
      */
-    public function grabUncachedSegment(JoinPointInterface $joinPoint)
+    public function grabUncachedSegment(JoinPointInterface $joinPoint): void
     {
         $this->hadUncachedSegments = true;
     }
 
     /**
-     * @Flow\Before("method(Neos\Neos\Fusion\Cache\ContentCacheFlusher->shutdownObject())")
-     * @param JoinPointInterface $joinPoint
-     *
-     * @throws \Neos\Utility\Exception\PropertyNotAccessibleException
+     * @throws PropertyNotAccessibleException
      */
-    public function interceptNodeCacheFlush(JoinPointInterface $joinPoint)
+    #[Flow\Before("method(Neos\Neos\Fusion\Cache\ContentCacheFlusher->shutdownObject())")]
+    public function interceptNodeCacheFlush(JoinPointInterface $joinPoint): void
     {
         $object = $joinPoint->getProxy();
 
@@ -50,9 +40,6 @@ class ContentCacheAspect
         $this->cacheFrontend->flushByTags($tags);
     }
 
-    /**
-     * @return bool
-     */
     public function hasUncachedSegments(): bool
     {
         return $this->hadUncachedSegments;
@@ -64,7 +51,7 @@ class ContentCacheAspect
      * @param string $tag A tag which possibly contains non-allowed characters, for example "NodeType_Acme.Com:Page"
      * @return string A cleaned up tag, for example "NodeType_Acme_Com-Page"
      */
-    protected function sanitizeTag($tag)
+    protected function sanitizeTag(string $tag): string
     {
         return strtr($tag, '.:', '_-');
     }

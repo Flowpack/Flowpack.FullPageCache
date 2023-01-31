@@ -16,40 +16,37 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
     public const HEADER_ENABLED = 'X-FullPageCache-EnableFusionAutoconfiguration';
 
     /**
-     * @Flow\Inject
      * @var MetadataAwareStringFrontend
      */
+    #[Flow\Inject]
     protected $contentCache;
 
     /**
-     * @Flow\Inject
      * @var ContentCacheAspect
      */
+    #[Flow\Inject]
     protected $contentCacheAspect;
 
-    /**
-     * @var boolean
-     * @Flow\InjectConfiguration(path="enabled")
-     */
-    protected $enabled;
+    #[Flow\InjectConfiguration('enabled')]
+    protected bool $enabled;
 
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if (!$this->enabled || !$request->hasHeader(RequestCacheMiddleware::HEADER_ENABLED)) {
-            return $next->handle($request)->withoutHeader(self::HEADER_ENABLED);
+            return $handler->handle($request)->withoutHeader(self::HEADER_ENABLED);
         }
 
-        $response = $next->handle($request);
+        $response = $handler->handle($request);
 
         if (!$response->hasHeader(self::HEADER_ENABLED)) {
             return $response;
-        } else {
-            $response = $response->withoutHeader(self::HEADER_ENABLED);
         }
 
-        list($hasUncachedSegments, $tags, $lifetime) = $this->getFusionCacheInformations();
+        $response = $response->withoutHeader(self::HEADER_ENABLED);
 
-        if ($response->hasHeader('Set-Cookie') || $hasUncachedSegments) {
+        [$hasUncachedSegments, $tags, $lifetime] = $this->getFusionCacheInformation();
+
+        if ($hasUncachedSegments || $response->hasHeader('Set-Cookie')) {
             return $response;
         }
 
@@ -63,7 +60,7 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
 
         if ($lifetime) {
             $response = $response
-                ->withHeader(RequestCacheMiddleware::HEADER_LIFTIME, $lifetime);
+                ->withHeader(RequestCacheMiddleware::HEADER_LIFETIME, $lifetime);
         }
 
         return $response;
@@ -74,14 +71,14 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
      *
      * @return array with first "hasUncachedSegments", "tags" and "lifetime"
      */
-    public function getFusionCacheInformations(): array
+    public function getFusionCacheInformation(): array
     {
         $lifetime = null;
         $tags = [];
         $entriesMetadata = $this->contentCache->getAllMetadata();
-        foreach ($entriesMetadata as $identifier => $metadata) {
-            $entryTags = isset($metadata['tags']) ? $metadata['tags'] : [];
-            $entryLifetime = isset($metadata['lifetime']) ? $metadata['lifetime'] : null;
+        foreach ($entriesMetadata as $metadata) {
+            $entryTags = $metadata['tags'] ?? [];
+            $entryLifetime = $metadata['lifetime'] ?? null;
             if ($entryLifetime !== null) {
                 if ($lifetime === null) {
                     $lifetime = $entryLifetime;
