@@ -29,8 +29,21 @@ Flowpack:
       cookieParams:
         # ignored cookie params exclude cookies that are handled by the frontend
         # and are not relevant for the backend. A usecase would be gdpr consent cookies
-        # if they are only used on the client side
+        # if they are only used on the client side.
+        # Example:
+        #  - 'consent_settings'
+        #  => If the cookie "consent_settings" is present, it will be cached.
+        #     But if a "_ga" cookie is present, the request will not be cached.
+        # Important: Only evaluated if "respect" is empty!
         ignore: []
+
+        # respected cookie params are relevant for the backend and will skip the caching.
+        # Example:
+        #  - 'Neos_Session'
+        #  => If the "Neos_Session" cookie is present in the request, it will not be cached.
+        #     But if a "_ga" cookie is present, the request will be cached.
+        # Important: Only evaluated if "ignore" is empty!
+        respect: []
 
       # a request will only qualify for caching if it only contains queryParams that
       # are allowed or ignored. All other arguments will prevent caching.
@@ -42,7 +55,21 @@ Flowpack:
         # ignored arguments are not part of the cache identifier but do not
         # prevent caching either. Use this for arguments that are meaningless for
         # the backend like utm_campaign
+        # Example:
+        #  - 'utm_campaign'
+        #  => If the "utm_campaign" argument is present in the request, it will be cached.
+        #     But if a "utm_source" argument is present, the request will not be cached.
+        # Important: Only evaluated if "respect" is empty!
         ignore: []
+
+        # respected arguments are relevant for the backend and will skip the caching.
+        # All other arguments will be ignored and cached as if they weren't there.
+        # Example:
+        #  - 'search'
+        #  => If the "search" argument is present in the request, it will not be cached.
+        #     But if a "utm_source" argument is present, the request will be cached as if the argument wouldn't be there.
+        # Important: Only evaluated if "ignore" is empty!
+        respect: []
 ```
 
 You can also move the cache backend to something faster if available, to improve performance even more.

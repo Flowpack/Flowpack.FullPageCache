@@ -48,9 +48,21 @@ class RequestCacheMiddleware implements MiddlewareInterface
 
     /**
      * @var array
+     * @Flow\InjectConfiguration(path="request.queryParams.respect")
+     */
+    protected $respectedQueryParams;
+
+    /**
+     * @var array
      * @Flow\InjectConfiguration(path="request.cookieParams.ignore")
      */
     protected $ignoredCookieParams;
+
+    /**
+     * @var array
+     * @Flow\InjectConfiguration(path="request.cookieParams.respect")
+     */
+    protected $respectedCookieParams;
 
     /**
      * @var boolean
@@ -127,13 +139,17 @@ class RequestCacheMiddleware implements MiddlewareInterface
         $requestQueryParams = $request->getQueryParams();
         $allowedQueryParams = [];
         $ignoredQueryParams = [];
+        $respectedQueryParams = [];
         $disallowedQueryParams = [];
         foreach ($requestQueryParams as $key => $value) {
             switch (true) {
                 case (in_array($key, $this->allowedQueryParams)):
                     $allowedQueryParams[$key] = $value;
                     break;
-                case (in_array($key, $this->ignoredQueryParams)):
+                case (in_array($key, $this->ignoredQueryParams) && empty($this->respectedQueryParams)):
+                    $ignoredQueryParams[$key] = $value;
+                    break;
+                case (!in_array($key, $this->respectedQueryParams) && empty($this->ignoredQueryParams)):
                     $ignoredQueryParams[$key] = $value;
                     break;
                 default:
@@ -148,7 +164,9 @@ class RequestCacheMiddleware implements MiddlewareInterface
         $requestCookieParams = $request->getCookieParams();
         $disallowedCookieParams = [];
         foreach ($requestCookieParams as $key => $value) {
-            if (!in_array($key, $this->ignoredCookieParams)) {
+            if (!in_array($key, $this->ignoredCookieParams) && !empty($this->ignoredCookieParams) && empty($this->respectedCookieParams)) {
+                $disallowedCookieParams[$key] = $value;
+            } else if (in_array($key, $this->respectedCookieParams) && empty($this->ignoredCookieParams)) {
                 $disallowedCookieParams[$key] = $value;
             }
         }
