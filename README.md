@@ -10,7 +10,7 @@ Settings
 
 Two settings are available to you to influence the behavior.
 
-```
+```yaml
 Flowpack:
   FullPageCache:
     # enable full page caching
