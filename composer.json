@@ -4,7 +4,7 @@
     "name": "flowpack/fullpagecache",
     "license": "MIT",
     "require": {
-        "neos/neos": "^8.0 || dev-master",
+        "neos/neos": "^8.0 || ^9.0 || dev-master",
         "guzzlehttp/psr7": "^1.7, !=1.8.0 || ~2.0"
     },
     "autoload": {
