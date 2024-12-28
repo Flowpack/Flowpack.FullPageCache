@@ -19,6 +19,7 @@ class RequestCacheMiddleware implements MiddlewareInterface
     public const HEADER_INFO = 'X-FullPageCache-Info';
 
     public const HEADER_LIFTIME = 'X-FullPageCache-Lifetime';
+    public const HEADER_LIFETIME = 'X-FullPageCache-Lifetime';
 
     public const HEADER_TAGS = 'X-FullPageCache-Tags';
 
@@ -81,11 +82,11 @@ class RequestCacheMiddleware implements MiddlewareInterface
         $response = $next->handle($request->withHeader(self::HEADER_ENABLED, ''));
 
         if ($response->hasHeader(self::HEADER_ENABLED)) {
-            $lifetime = $response->hasHeader(self::HEADER_LIFTIME) ? (int)$response->getHeaderLine(self::HEADER_LIFTIME) : null;
+            $lifetime = $response->hasHeader(self::HEADER_LIFETIME) ? (int)$response->getHeaderLine(self::HEADER_LIFETIME) : null;
             $tags = $response->hasHeader(self::HEADER_TAGS) ? $response->getHeader(self::HEADER_TAGS) : [];
             $response = $response
                 ->withoutHeader(self::HEADER_ENABLED)
-                ->withoutHeader(self::HEADER_LIFTIME)
+                ->withoutHeader(self::HEADER_LIFETIME)
                 ->withoutHeader(self::HEADER_TAGS);
 
             $publicLifetime = 0;

@@ -63,7 +63,7 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
 
         if ($lifetime) {
             $response = $response
-                ->withHeader(RequestCacheMiddleware::HEADER_LIFTIME, $lifetime);
+                ->withHeader(RequestCacheMiddleware::HEADER_LIFETIME, $lifetime);
         }
 
         return $response;
