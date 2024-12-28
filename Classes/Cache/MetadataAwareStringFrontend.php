@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\FullPageCache\Cache;
 
 use Neos\Cache\Frontend\StringFrontend;
@@ -18,7 +19,7 @@ class MetadataAwareStringFrontend extends StringFrontend
     /**
      * Store metadata of all loaded cache entries indexed by identifier
      *
-     * @var array
+     * @var array<string, array{identifier:string, tags: string[], lifetime: int|null}>
      */
     protected $metadata = [];
 
@@ -38,6 +39,10 @@ class MetadataAwareStringFrontend extends StringFrontend
      * Set a cache entry and store additional metadata (tags and lifetime)
      *
      * {@inheritdoc}
+     *
+     * @param string $content
+     * @param string[] $tags
+     * @return void
      */
     public function set(string $entryIdentifier, $content, array $tags = [], int $lifetime = null)
     {
@@ -47,6 +52,8 @@ class MetadataAwareStringFrontend extends StringFrontend
 
     /**
      * {@inheritdoc}
+     *
+     * @return string|false
      */
     public function get(string $entryIdentifier)
     {
@@ -60,6 +67,7 @@ class MetadataAwareStringFrontend extends StringFrontend
 
     /**
      * {@inheritdoc}
+     * @return array<string,string>
      */
     public function getByTag(string $tag): array
     {
@@ -76,16 +84,12 @@ class MetadataAwareStringFrontend extends StringFrontend
      *
      * @param string $content
      * @param string $entryIdentifier The identifier metadata
-     * @param array $tags The tags metadata
+     * @param string[] $tags The tags metadata
      * @param integer $lifetime The lifetime metadata
      * @return string The content including the serialized metadata
-     * @throws InvalidDataTypeException
      */
-    protected function insertMetadata($content, $entryIdentifier, array $tags, $lifetime)
+    protected function insertMetadata(string $content, string $entryIdentifier, array $tags, ?int $lifetime)
     {
-        if (!is_string($content)) {
-            throw new InvalidDataTypeException('Given data is of type "' . gettype($content) . '", but a string is expected for string cache.', 1433155737);
-        }
         $metadata = [
             'identifier' => $entryIdentifier,
             'tags' => $tags,
@@ -105,7 +109,7 @@ class MetadataAwareStringFrontend extends StringFrontend
      * @return string The content without metadata
      * @throws InvalidDataTypeException
      */
-    protected function extractMetadata($entryIdentifier, $content)
+    protected function extractMetadata($entryIdentifier, $content): string
     {
         $separatorIndex = strpos($content, self::SEPARATOR);
         if ($separatorIndex === false) {
@@ -115,6 +119,7 @@ class MetadataAwareStringFrontend extends StringFrontend
             } else {
                 throw $exception;
             }
+            return $content;
         }
 
         $metadataJson = substr($content, 0, $separatorIndex);
@@ -134,9 +139,9 @@ class MetadataAwareStringFrontend extends StringFrontend
     }
 
     /**
-     * @return array Metadata of all loaded entries (indexed by identifier)
+     * @return array<string, array{identifier:string, tags?: string[], lifetime?: int|null}> Metadata of all loaded entries (indexed by identifier)
      */
-    public function getAllMetadata()
+    public function getAllMetadata(): array
     {
         return $this->metadata;
     }

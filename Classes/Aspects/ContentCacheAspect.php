@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\FullPageCache\Aspects;
 
 use Neos\Cache\Frontend\StringFrontend;
@@ -12,14 +13,7 @@ use Neos\Utility\ObjectAccess;
  */
 class ContentCacheAspect
 {
-    private $hadUncachedSegments = false;
-
-    private $cacheTags = [];
-
-    /**
-     * @var null|int
-     */
-    private $shortestLifetime = null;
+    private bool $hadUncachedSegments = false;
 
     /**
      * @Flow\Inject
@@ -30,7 +24,7 @@ class ContentCacheAspect
     /**
      * @Flow\Before("method(Neos\Fusion\Core\Cache\ContentCache->(createUncachedSegment)())")
      */
-    public function grabUncachedSegment(JoinPointInterface $joinPoint)
+    public function grabUncachedSegment(JoinPointInterface $joinPoint): void
     {
         $this->hadUncachedSegments = true;
     }
@@ -41,7 +35,7 @@ class ContentCacheAspect
      *
      * @throws \Neos\Utility\Exception\PropertyNotAccessibleException
      */
-    public function interceptNodeCacheFlush(JoinPointInterface $joinPoint)
+    public function interceptNodeCacheFlush(JoinPointInterface $joinPoint): void
     {
         $object = $joinPoint->getProxy();
 

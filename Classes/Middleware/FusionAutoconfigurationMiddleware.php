@@ -1,8 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Flowpack\FullPageCache\Middleware;
 
+use Flowpack\FullPageCache\Domain\Dto\FusionCacheInformation;
 use Neos\Flow\Annotations as Flow;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -47,23 +49,24 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
             $response = $response->withoutHeader(self::HEADER_ENABLED);
         }
 
-        list($hasUncachedSegments, $tags, $lifetime) = $this->getFusionCacheInformations();
+        $cacheMetadata = $this->getFusionCacheInformations();
 
-        if ($response->hasHeader('Set-Cookie') || $hasUncachedSegments) {
+        if ($response->hasHeader('Set-Cookie') || $cacheMetadata->hasUncachedSegments) {
             return $response;
         }
 
         $response = $response
             ->withHeader(RequestCacheMiddleware::HEADER_ENABLED, "");
 
-        if ($tags) {
+        if ($cacheMetadata->tags) {
             $response = $response
-                ->withHeader(RequestCacheMiddleware::HEADER_TAGS, $tags);
+                ->withHeader(RequestCacheMiddleware::HEADER_TAGS, $cacheMetadata->tags);
         }
 
-        if ($lifetime) {
+
+        if ($cacheMetadata->lifetime) {
             $response = $response
-                ->withHeader(RequestCacheMiddleware::HEADER_LIFTIME, $lifetime);
+                ->withHeader(RequestCacheMiddleware::HEADER_LIFETIME, (string)$cacheMetadata->lifetime);
         }
 
         return $response;
@@ -71,10 +74,8 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
 
     /**
      * Get cache tags and lifetime from the cache metadata that was extracted by the special cache frontend for content cache
-     *
-     * @return array with first "hasUncachedSegments", "tags" and "lifetime"
      */
-    public function getFusionCacheInformations(): array
+    public function getFusionCacheInformations(): FusionCacheInformation
     {
         $lifetime = null;
         $tags = [];
@@ -93,6 +94,6 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
         }
         $hasUncachedSegments = $this->contentCacheAspect->hasUncachedSegments();
 
-        return [$hasUncachedSegments, $tags, $lifetime];
+        return new FusionCacheInformation($hasUncachedSegments, $tags, $lifetime);
     }
 }
