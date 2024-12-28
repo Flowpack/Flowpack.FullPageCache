@@ -36,6 +36,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-php-
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+            php-version: ${{ matrix.php-versions }}
+            extensions: mbstring, xml, json, zlib, iconv, intl, pdo_sqlite
+            ini-values: date.timezone="Africa/Tunis", opcache.fast_shutdown=0, apc.enable_cli=on
+
       - name: Set Neos Version
         run: composer require neos/neos ^${{ matrix.neos-versions }} --no-progress --no-interaction
 

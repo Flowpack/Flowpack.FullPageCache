@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Flowpack\FullPageCache\Middleware;
 
+use Flowpack\FullPageCache\Domain\Dto\CacheEntry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Cache\Frontend\VariableFrontend;
 use Psr\Http\Message\ResponseInterface;
@@ -36,19 +37,19 @@ class RequestCacheMiddleware implements MiddlewareInterface
     protected $cacheFrontend;
 
     /**
-     * @var array
+     * @var string[]
      * @Flow\InjectConfiguration(path="request.queryParams.allow")
      */
     protected $allowedQueryParams;
 
     /**
-     * @var array
+     * @var string[]
      * @Flow\InjectConfiguration(path="request.queryParams.ignore")
      */
     protected $ignoredQueryParams;
 
     /**
-     * @var array
+     * @var string[]
      * @Flow\InjectConfiguration(path="request.cookieParams.ignore")
      */
     protected $ignoredCookieParams;
@@ -72,11 +73,10 @@ class RequestCacheMiddleware implements MiddlewareInterface
         }
 
         if ($cacheEntry = $this->cacheFrontend->get($entryIdentifier)) {
-            $age = time() - $cacheEntry['timestamp'];
-            $response = Message::parseResponse($cacheEntry['response']);
-            return $response
-                ->withHeader('Age', (string)$age)
-                ->withHeader(self::HEADER_INFO, 'HIT: ' . $entryIdentifier);
+            if ($cacheEntry instanceof CacheEntry) {
+                return $cacheEntry->getResponse()
+                    ->withHeader(self::HEADER_INFO, 'HIT: ' . $entryIdentifier);
+            }
         }
 
         $response = $next->handle($request->withHeader(self::HEADER_ENABLED, ''));
@@ -106,8 +106,7 @@ class RequestCacheMiddleware implements MiddlewareInterface
                     ->withHeader('Cache-Control', 'public, max-age=' . $publicLifetime);
             }
 
-            $this->cacheFrontend->set($entryIdentifier, [ 'timestamp' => time(), 'response' => Message::toString($response) ], $tags, $lifetime);
-            $response->getBody()->rewind();
+            $this->cacheFrontend->set($entryIdentifier, CacheEntry::createFromResponse($response), $tags, $lifetime);
             return $response->withHeader(self::HEADER_INFO, 'MISS: ' . $entryIdentifier);
         }
 
