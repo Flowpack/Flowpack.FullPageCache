@@ -15,13 +15,6 @@ class ContentCacheAspect
 {
     private $hadUncachedSegments = false;
 
-    private $cacheTags = [];
-
-    /**
-     * @var null|int
-     */
-    private $shortestLifetime = null;
-
     /**
      * @Flow\Inject
      * @var StringFrontend

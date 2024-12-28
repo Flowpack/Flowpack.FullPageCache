@@ -54,7 +54,7 @@ class RequestCacheMiddleware implements MiddlewareInterface
     protected $ignoredCookieParams;
 
     /**
-     * @var boolean
+     * @var int
      * @Flow\InjectConfiguration(path="maxPublicCacheTime")
      */
     protected $maxPublicCacheTime;
@@ -75,7 +75,7 @@ class RequestCacheMiddleware implements MiddlewareInterface
             $age = time() - $cacheEntry['timestamp'];
             $response = Message::parseResponse($cacheEntry['response']);
             return $response
-                ->withHeader('Age', $age)
+                ->withHeader('Age', (string)$age)
                 ->withHeader(self::HEADER_INFO, 'HIT: ' . $entryIdentifier);
         }
 

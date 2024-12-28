@@ -26,6 +26,7 @@
         "test:style": "phpcs --colors -n --standard=PSR12 Classes",
         "test:stan": "phpstan analyse Classes",
         "cc": "phpstan clear cache",
+        "fix": ["composer fix:style"],
         "test": ["composer test:style" , "composer test:stan"]
     },
     "config": {
