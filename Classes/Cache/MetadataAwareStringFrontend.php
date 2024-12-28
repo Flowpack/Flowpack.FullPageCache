@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\FullPageCache\Cache;
 
 use Neos\Cache\Frontend\StringFrontend;

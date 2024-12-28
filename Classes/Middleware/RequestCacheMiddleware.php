@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Flowpack\FullPageCache\Middleware;
@@ -10,7 +11,6 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use GuzzleHttp\Psr7\Message;
-use function GuzzleHttp\Psr7\str;
 
 class RequestCacheMiddleware implements MiddlewareInterface
 {
@@ -106,7 +106,7 @@ class RequestCacheMiddleware implements MiddlewareInterface
                     ->withHeader('Cache-Control', 'public, max-age=' . $publicLifetime);
             }
 
-            $this->cacheFrontend->set($entryIdentifier,[ 'timestamp' => time(), 'response' => Message::toString($response) ], $tags, $lifetime);
+            $this->cacheFrontend->set($entryIdentifier, [ 'timestamp' => time(), 'response' => Message::toString($response) ], $tags, $lifetime);
             $response->getBody()->rewind();
             return $response->withHeader(self::HEADER_INFO, 'MISS: ' . $entryIdentifier);
         }
