@@ -8,7 +8,7 @@ It works by checking if a page is fully cachable and in that case caching the  w
 Settings
 --------
 
-Two settings are available to you to influence the behavior.
+Following settings are available to influence the behavior:
 
 ```yaml
 Flowpack:

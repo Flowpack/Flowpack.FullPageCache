@@ -36,16 +36,14 @@ class ContentCacheAspect
     }
 
     /**
-     * @Flow\Before("method(Neos\Neos\Fusion\Cache\ContentCacheFlusher->shutdownObject())")
+     * @Flow\Before("method(Neos\Neos\Fusion\Cache\ContentCacheFlusher->flushTagsImmediately())")
      * @param JoinPointInterface $joinPoint
      *
      * @throws \Neos\Utility\Exception\PropertyNotAccessibleException
      */
     public function interceptNodeCacheFlush(JoinPointInterface $joinPoint)
     {
-        $object = $joinPoint->getProxy();
-
-        $tags = ObjectAccess::getProperty($object, 'tagsToFlush', true);
+        $tags = $joinPoint->getMethodArgument('tagsToFlush');
         $tags = array_map([$this, 'sanitizeTag'], array_keys($tags));
         $this->cacheFrontend->flushByTags($tags);
     }
