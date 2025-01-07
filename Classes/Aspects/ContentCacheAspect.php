@@ -1,4 +1,5 @@
 <?php
+
 namespace Flowpack\FullPageCache\Aspects;
 
 use Neos\Cache\Frontend\StringFrontend;
@@ -36,16 +37,32 @@ class ContentCacheAspect
     }
 
     /**
-     * @Flow\Before("method(Neos\Neos\Fusion\Cache\ContentCacheFlusher->shutdownObject())")
+     * This aspect is for Neos 8.x compatibility and can be removed, when Neos 8.x isn't supported anymore.
+     * See: ContentCacheAspect::interceptNodeCacheFlush() for Neos 9.x cache flushing
+     *
+     * @Flow\Before("method(Neos\Neos\Fusion\Cache\ContentCacheFlusher->commit())")
+     * @param JoinPointInterface $joinPoint
+     *
+     * @throws \Neos\Utility\Exception\PropertyNotAccessibleException
+     */
+    public function interceptLegacyNodeCacheFlush(JoinPointInterface $joinPoint)
+    {
+        $object = $joinPoint->getProxy();
+
+        $tags = ObjectAccess::getProperty($object, 'tagsToFlush', true);
+        $tags = array_map([$this, 'sanitizeTag'], array_keys($tags));
+        $this->cacheFrontend->flushByTags($tags);
+    }
+
+    /**
+     * @Flow\Before("method(Neos\Neos\Fusion\Cache\ContentCacheFlusher->flushTagsImmediately())")
      * @param JoinPointInterface $joinPoint
      *
      * @throws \Neos\Utility\Exception\PropertyNotAccessibleException
      */
     public function interceptNodeCacheFlush(JoinPointInterface $joinPoint)
     {
-        $object = $joinPoint->getProxy();
-
-        $tags = ObjectAccess::getProperty($object, 'tagsToFlush', true);
+        $tags = $joinPoint->getMethodArgument('tagsToFlush');
         $tags = array_map([$this, 'sanitizeTag'], array_keys($tags));
         $this->cacheFrontend->flushByTags($tags);
     }
