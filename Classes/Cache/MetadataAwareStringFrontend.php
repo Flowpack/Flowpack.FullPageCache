@@ -39,7 +39,7 @@ class MetadataAwareStringFrontend extends StringFrontend
      *
      * {@inheritdoc}
      */
-    public function set(string $entryIdentifier, $content, array $tags = [], int $lifetime = null)
+    public function set(string $entryIdentifier, $content, array $tags = [], ?int $lifetime = null)
     {
         $content = $this->insertMetadata($content, $entryIdentifier, $tags, $lifetime);
         parent::set($entryIdentifier, $content, $tags, $lifetime);
