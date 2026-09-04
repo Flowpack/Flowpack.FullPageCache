@@ -50,23 +50,26 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
         }
 
         $cacheMetadata = $this->getFusionCacheInformations();
+        $hasUncachedSegments = $cacheMetadata['hasUncachedSegments'];
+        $tags = $cacheMetadata['tags'];
+        $lifetime = $cacheMetadata['lifetime'];
 
-        if ($response->hasHeader('Set-Cookie') || $cacheMetadata->hasUncachedSegments) {
+        if ($response->hasHeader('Set-Cookie') || $hasUncachedSegments) {
             return $response;
         }
 
         $response = $response
             ->withHeader(RequestCacheMiddleware::HEADER_ENABLED, "");
 
-        if ($cacheMetadata->tags) {
+        if ($tags) {
             $response = $response
-                ->withHeader(RequestCacheMiddleware::HEADER_TAGS, $cacheMetadata->tags);
+                ->withHeader(RequestCacheMiddleware::HEADER_TAGS, $tags);
         }
 
 
-        if ($cacheMetadata->lifetime) {
+        if ($lifetime) {
             $response = $response
-                ->withHeader(RequestCacheMiddleware::HEADER_LIFETIME, (string)$cacheMetadata->lifetime);
+                ->withHeader(RequestCacheMiddleware::HEADER_LIFETIME, (string)$lifetime);
         }
 
         return $response;
@@ -74,11 +77,13 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
 
     /**
      * Get cache tags and lifetime from the cache metadata that was extracted by the special cache frontend for content cache
+     * @return array{hasUncachedSegments:bool, tags:string[], lifetime: ?int}
      */
-    public function getFusionCacheInformations(): FusionCacheInformation
+    public function getFusionCacheInformations(): array
     {
         $lifetime = null;
         $tags = [];
+
         $entriesMetadata = $this->contentCache->getAllMetadata();
         foreach ($entriesMetadata as $identifier => $metadata) {
             $entryTags = isset($metadata['tags']) ? $metadata['tags'] : [];
@@ -94,6 +99,6 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
         }
         $hasUncachedSegments = $this->contentCacheAspect->hasUncachedSegments();
 
-        return new FusionCacheInformation($hasUncachedSegments, $tags, $lifetime);
+        return ['hasUncachedSegments' => $hasUncachedSegments, 'tags' => $tags, 'lifetime' => $lifetime];
     }
 }

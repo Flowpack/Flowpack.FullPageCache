@@ -13,12 +13,16 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use GuzzleHttp\Psr7\Message;
 
+/**
+ * @phpstan-type CacheEntryShape array{timestamp:int, response:string}
+ */
 class RequestCacheMiddleware implements MiddlewareInterface
 {
     public const HEADER_ENABLED = 'X-FullPageCache-Enabled';
 
     public const HEADER_INFO = 'X-FullPageCache-Info';
 
+    // @deprecated use HEADER_LIFETIME instead
     public const HEADER_LIFTIME = 'X-FullPageCache-Lifetime';
     public const HEADER_LIFETIME = 'X-FullPageCache-Lifetime';
 
@@ -60,6 +64,12 @@ class RequestCacheMiddleware implements MiddlewareInterface
      */
     protected $maxPublicCacheTime;
 
+    /**
+     * @var int
+     * @Flow\InjectConfiguration(path="maxSharedCacheTime")
+     */
+    protected $maxSharedCacheTime;
+
     public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
     {
         if (!$this->enabled) {
@@ -72,10 +82,12 @@ class RequestCacheMiddleware implements MiddlewareInterface
             return $next->handle($request)->withHeader(self::HEADER_INFO, 'SKIP');
         }
 
+        /** @var ?CacheEntryShape $cacheEntry */
         $cacheEntry = $this->cacheFrontend->get($entryIdentifier);
-        if ($cacheEntry instanceof CacheEntry) {
-            $age = time() - $cacheEntry->timestamp;
-            return $cacheEntry->getResponse()
+        if ($cacheEntry) {
+            $age = time() - $cacheEntry['timestamp'];
+            $response = Message::parseResponse($cacheEntry['response']);
+            return $response
                 ->withHeader('Age', (string)$age)
                 ->withHeader(self::HEADER_INFO, 'HIT: ' . $entryIdentifier);
         }
@@ -107,7 +119,9 @@ class RequestCacheMiddleware implements MiddlewareInterface
                     ->withHeader('Cache-Control', 'public, max-age=' . $publicLifetime);
             }
 
-            $this->cacheFrontend->set($entryIdentifier, CacheEntry::createFromResponse($response), $tags, $lifetime);
+            /** @var CacheEntryShape $cacheEntry */
+            $cacheEntry = [ 'timestamp' => time(), 'response' => Message::toString($response) ];
+            $this->cacheFrontend->set($entryIdentifier, $cacheEntry, $tags, $lifetime);
             return $response->withHeader(self::HEADER_INFO, 'MISS: ' . $entryIdentifier);
         }
 
