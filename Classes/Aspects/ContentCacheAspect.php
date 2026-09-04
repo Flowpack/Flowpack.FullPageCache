@@ -38,7 +38,7 @@ class ContentCacheAspect
      *
      * @throws \Neos\Utility\Exception\PropertyNotAccessibleException
      */
-    public function interceptLegacyNodeCacheFlush(JoinPointInterface $joinPoint)
+    public function interceptLegacyNodeCacheFlush(JoinPointInterface $joinPoint): void
     {
         $object = $joinPoint->getProxy();
 
