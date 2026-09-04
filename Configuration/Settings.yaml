@@ -3,9 +3,17 @@ Flowpack:
     # enable full page caching
     enabled: true
 
-    # the maximum public cache control header sent
-    # set to 0 if you do not want to send public CacheControl headers
+    # enable adding of public age headers with the actual age of the cached record
+    # consider disabling this if the public max-ages or s-maxage are lower than the internally allowed ages
+    publicAge: true
+
+    # the maximum value for the `max-age` directive for the Cache-Control header
+    # set to 0 if you do not want to add the directives
     maxPublicCacheTime: 86400
+
+    # the maximum value for the `s-maxage` directive for the Cache-Control header
+    # set to 0 if you do not want to add the directive
+    maxSharedCacheTime: 0
 
     # requests have to fulfill certain conditions for beeing cached
     request:

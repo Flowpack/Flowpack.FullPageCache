@@ -70,6 +70,12 @@ class RequestCacheMiddleware implements MiddlewareInterface
      */
     protected $maxSharedCacheTime;
 
+    /**
+     * @var bool
+     * @Flow\InjectConfiguration(path="publicAge")
+     */
+    protected $publicAge;
+
     public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
     {
         if (!$this->enabled) {
@@ -82,14 +88,15 @@ class RequestCacheMiddleware implements MiddlewareInterface
             return $next->handle($request)->withHeader(self::HEADER_INFO, 'SKIP');
         }
 
-        /** @var ?CacheEntryShape $cacheEntry */
+        /** @var CacheEntryShape|false $cacheEntry */
         $cacheEntry = $this->cacheFrontend->get($entryIdentifier);
         if ($cacheEntry) {
-            $age = time() - $cacheEntry['timestamp'];
             $response = Message::parseResponse($cacheEntry['response']);
-            return $response
-                ->withHeader('Age', (string)$age)
-                ->withHeader(self::HEADER_INFO, 'HIT: ' . $entryIdentifier);
+            if ($this->publicAge) {
+                $age = time() - $cacheEntry['timestamp'];
+                $response = $response->withHeader('Age', (string)$age);
+            }
+            return $response->withHeader(self::HEADER_INFO, 'HIT: ' . $entryIdentifier);
         }
 
         $response = $next->handle($request->withHeader(self::HEADER_ENABLED, ''));
@@ -111,12 +118,28 @@ class RequestCacheMiddleware implements MiddlewareInterface
                 }
             }
 
-            if ($publicLifetime > 0) {
+            $sharedLifetime = 0;
+            if ($this->maxSharedCacheTime > 0) {
+                if ($lifetime > 0 && $lifetime < $this->maxSharedCacheTime) {
+                    $sharedLifetime = $lifetime;
+                } else {
+                    $sharedLifetime = $this->maxSharedCacheTime;
+                }
+            }
+
+            if ($publicLifetime > 0 || $sharedLifetime > 0) {
+                $cacheControlHeaderParts = ['public'];
+                if ($publicLifetime > 0) {
+                    $cacheControlHeaderParts[] = 'max-age=' . $publicLifetime;
+                }
+                if ($sharedLifetime > 0) {
+                    $cacheControlHeaderParts[] = 's-maxage=' . $sharedLifetime;
+                }
                 $entryContentHash = md5($response->getBody()->getContents());
                 $response->getBody()->rewind();
                 $response = $response
                     ->withHeader('ETag', '"' . $entryContentHash . '"')
-                    ->withHeader('Cache-Control', 'public, max-age=' . $publicLifetime);
+                    ->withHeader('Cache-Control', implode(', ', $cacheControlHeaderParts));
             }
 
             /** @var CacheEntryShape $cacheEntry */
