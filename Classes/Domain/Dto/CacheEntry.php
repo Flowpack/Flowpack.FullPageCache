@@ -28,7 +28,6 @@ readonly class CacheEntry
 
     public function getResponse(): ResponseInterface
     {
-        return Message::parseResponse($this->responseAsString)
-            ->withHeader('Age', (string)(time() - $this->timestamp));
+        return Message::parseResponse($this->responseAsString);
     }
 }

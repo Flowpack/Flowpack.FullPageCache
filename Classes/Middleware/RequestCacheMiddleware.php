@@ -72,11 +72,12 @@ class RequestCacheMiddleware implements MiddlewareInterface
             return $next->handle($request)->withHeader(self::HEADER_INFO, 'SKIP');
         }
 
-        if ($cacheEntry = $this->cacheFrontend->get($entryIdentifier)) {
-            if ($cacheEntry instanceof CacheEntry) {
-                return $cacheEntry->getResponse()
-                    ->withHeader(self::HEADER_INFO, 'HIT: ' . $entryIdentifier);
-            }
+        $cacheEntry = $this->cacheFrontend->get($entryIdentifier);
+        if ($cacheEntry instanceof CacheEntry) {
+            $age = time() - $cacheEntry->timestamp;
+            return $cacheEntry->getResponse()
+                ->withHeader('Age', (string)$age)
+                ->withHeader(self::HEADER_INFO, 'HIT: ' . $entryIdentifier);
         }
 
         $response = $next->handle($request->withHeader(self::HEADER_ENABLED, ''));
