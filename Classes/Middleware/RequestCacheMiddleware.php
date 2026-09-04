@@ -1,8 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Flowpack\FullPageCache\Middleware;
 
+use Flowpack\FullPageCache\Domain\Dto\CacheEntry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Cache\Frontend\VariableFrontend;
 use Psr\Http\Message\ResponseInterface;
@@ -10,15 +12,19 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use GuzzleHttp\Psr7\Message;
-use function GuzzleHttp\Psr7\str;
 
+/**
+ * @phpstan-type CacheEntryShape array{timestamp:int, response:string}
+ */
 class RequestCacheMiddleware implements MiddlewareInterface
 {
     public const HEADER_ENABLED = 'X-FullPageCache-Enabled';
 
     public const HEADER_INFO = 'X-FullPageCache-Info';
 
+    // @deprecated use HEADER_LIFETIME instead
     public const HEADER_LIFTIME = 'X-FullPageCache-Lifetime';
+    public const HEADER_LIFETIME = 'X-FullPageCache-Lifetime';
 
     public const HEADER_TAGS = 'X-FullPageCache-Tags';
 
@@ -35,28 +41,34 @@ class RequestCacheMiddleware implements MiddlewareInterface
     protected $cacheFrontend;
 
     /**
-     * @var array
+     * @var string[]
      * @Flow\InjectConfiguration(path="request.queryParams.allow")
      */
     protected $allowedQueryParams;
 
     /**
-     * @var array
+     * @var string[]
      * @Flow\InjectConfiguration(path="request.queryParams.ignore")
      */
     protected $ignoredQueryParams;
 
     /**
-     * @var array
+     * @var string[]
      * @Flow\InjectConfiguration(path="request.cookieParams.ignore")
      */
     protected $ignoredCookieParams;
 
     /**
-     * @var boolean
+     * @var int
      * @Flow\InjectConfiguration(path="maxPublicCacheTime")
      */
     protected $maxPublicCacheTime;
+
+    /**
+     * @var int
+     * @Flow\InjectConfiguration(path="maxSharedCacheTime")
+     */
+    protected $maxSharedCacheTime;
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $next): ResponseInterface
     {
@@ -70,22 +82,24 @@ class RequestCacheMiddleware implements MiddlewareInterface
             return $next->handle($request)->withHeader(self::HEADER_INFO, 'SKIP');
         }
 
-        if ($cacheEntry = $this->cacheFrontend->get($entryIdentifier)) {
+        /** @var ?CacheEntryShape $cacheEntry */
+        $cacheEntry = $this->cacheFrontend->get($entryIdentifier);
+        if ($cacheEntry) {
             $age = time() - $cacheEntry['timestamp'];
             $response = Message::parseResponse($cacheEntry['response']);
             return $response
-                ->withHeader('Age', $age)
+                ->withHeader('Age', (string)$age)
                 ->withHeader(self::HEADER_INFO, 'HIT: ' . $entryIdentifier);
         }
 
         $response = $next->handle($request->withHeader(self::HEADER_ENABLED, ''));
 
         if ($response->hasHeader(self::HEADER_ENABLED)) {
-            $lifetime = $response->hasHeader(self::HEADER_LIFTIME) ? (int)$response->getHeaderLine(self::HEADER_LIFTIME) : null;
+            $lifetime = $response->hasHeader(self::HEADER_LIFETIME) ? (int)$response->getHeaderLine(self::HEADER_LIFETIME) : null;
             $tags = $response->hasHeader(self::HEADER_TAGS) ? $response->getHeader(self::HEADER_TAGS) : [];
             $response = $response
                 ->withoutHeader(self::HEADER_ENABLED)
-                ->withoutHeader(self::HEADER_LIFTIME)
+                ->withoutHeader(self::HEADER_LIFETIME)
                 ->withoutHeader(self::HEADER_TAGS);
 
             $publicLifetime = 0;
@@ -105,8 +119,9 @@ class RequestCacheMiddleware implements MiddlewareInterface
                     ->withHeader('Cache-Control', 'public, max-age=' . $publicLifetime);
             }
 
-            $this->cacheFrontend->set($entryIdentifier,[ 'timestamp' => time(), 'response' => Message::toString($response) ], $tags, $lifetime);
-            $response->getBody()->rewind();
+            /** @var CacheEntryShape $cacheEntry */
+            $cacheEntry = [ 'timestamp' => time(), 'response' => Message::toString($response) ];
+            $this->cacheFrontend->set($entryIdentifier, $cacheEntry, $tags, $lifetime);
             return $response->withHeader(self::HEADER_INFO, 'MISS: ' . $entryIdentifier);
         }
 

@@ -1,8 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Flowpack\FullPageCache\Middleware;
 
+use Flowpack\FullPageCache\Domain\Dto\FusionCacheInformation;
 use Neos\Flow\Annotations as Flow;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -47,7 +49,10 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
             $response = $response->withoutHeader(self::HEADER_ENABLED);
         }
 
-        list($hasUncachedSegments, $tags, $lifetime) = $this->getFusionCacheInformations();
+        $cacheMetadata = $this->getFusionCacheInformations();
+        $hasUncachedSegments = $cacheMetadata['hasUncachedSegments'];
+        $tags = $cacheMetadata['tags'];
+        $lifetime = $cacheMetadata['lifetime'];
 
         if ($response->hasHeader('Set-Cookie') || $hasUncachedSegments) {
             return $response;
@@ -61,9 +66,10 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
                 ->withHeader(RequestCacheMiddleware::HEADER_TAGS, $tags);
         }
 
+
         if ($lifetime) {
             $response = $response
-                ->withHeader(RequestCacheMiddleware::HEADER_LIFTIME, $lifetime);
+                ->withHeader(RequestCacheMiddleware::HEADER_LIFETIME, (string)$lifetime);
         }
 
         return $response;
@@ -71,13 +77,13 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
 
     /**
      * Get cache tags and lifetime from the cache metadata that was extracted by the special cache frontend for content cache
-     *
-     * @return array with first "hasUncachedSegments", "tags" and "lifetime"
+     * @return array{hasUncachedSegments:bool, tags:string[], lifetime: ?int}
      */
     public function getFusionCacheInformations(): array
     {
         $lifetime = null;
         $tags = [];
+
         $entriesMetadata = $this->contentCache->getAllMetadata();
         foreach ($entriesMetadata as $identifier => $metadata) {
             $entryTags = isset($metadata['tags']) ? $metadata['tags'] : [];
@@ -93,6 +99,6 @@ class FusionAutoconfigurationMiddleware implements MiddlewareInterface
         }
         $hasUncachedSegments = $this->contentCacheAspect->hasUncachedSegments();
 
-        return [$hasUncachedSegments, $tags, $lifetime];
+        return ['hasUncachedSegments' => $hasUncachedSegments, 'tags' => $tags, 'lifetime' => $lifetime];
     }
 }
