@@ -144,6 +144,7 @@ class RequestCacheMiddleware implements MiddlewareInterface
 
             /** @var CacheEntryShape $cacheEntry */
             $cacheEntry = [ 'timestamp' => time(), 'response' => Message::toString($response) ];
+            $response->getBody()->rewind();
             $this->cacheFrontend->set($entryIdentifier, $cacheEntry, $tags, $lifetime);
             return $response->withHeader(self::HEADER_INFO, 'MISS: ' . $entryIdentifier);
         }
